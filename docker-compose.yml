@@ -1,0 +1,49 @@
+services:
+  source:
+    image: postgres:16-alpine
+    container_name: adventureworks_source
+    environment:
+      POSTGRES_DB: ${SOURCE_DB_NAME:-adventureworks}
+      POSTGRES_USER: ${SOURCE_DB_USER:-adventureworks_user}
+      POSTGRES_PASSWORD: ${SOURCE_DB_PASSWORD:-adventureworks_dev}
+    ports:
+      - "${SOURCE_DB_PORT:-5433}:5432"
+    volumes:
+      - source_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${SOURCE_DB_USER:-adventureworks_user} -d ${SOURCE_DB_NAME:-adventureworks}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  warehouse:
+    image: postgres:16-alpine
+    container_name: adventureworks_warehouse
+    environment:
+      POSTGRES_DB: ${WAREHOUSE_DB_NAME:-analytics}
+      POSTGRES_USER: ${WAREHOUSE_DB_USER:-analytics_user}
+      POSTGRES_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-analytics_dev}
+    ports:
+      - "${WAREHOUSE_DB_PORT:-5434}:5432"
+    volumes:
+      - warehouse_data:/var/lib/postgresql/data
+      - ./database/init/warehouse:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${WAREHOUSE_DB_USER:-analytics_user} -d ${WAREHOUSE_DB_NAME:-analytics}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  source_data:
+  warehouse_data:
