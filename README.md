@@ -1,151 +1,302 @@
 # Modern Data Platform Portfolio
 
-> Plataforma analítica de portfólio construída sobre o AdventureWorks, com práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
+> Projeto de portfólio para construção de uma plataforma analítica moderna, utilizando boas práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
 
-## Problema de negócio
+---
 
-A Adventure Works possui relatórios lentos e inconsistentes, conectados
-diretamente ao banco transacional. O projeto cria uma plataforma analítica
-reprodutível para separar o processamento operacional do consumo de dados.
+# Visão do projeto
 
-O primeiro domínio é **Vendas** e deve responder:
+O objetivo não é apenas construir um dashboard.
 
-- Quanto a empresa vendeu por mês?
-- Quais produtos e categorias geram mais receita?
-- Quem são os principais clientes?
-- Qual é o ticket médio?
-- Como as vendas variam por território?
-- Qual é a margem bruta por produto?
+O projeto simula a implantação de uma plataforma de dados em uma empresa real, com arquitetura, documentação e padrões utilizados por equipes de dados.
 
-## Arquitetura do MVP
+---
+
+# Objetivos
+
+Demonstrar experiência prática em:
+
+- SQL;
+- PostgreSQL;
+- Airbyte;
+- Python;
+- Docker e Docker Compose;
+- Git e GitHub;
+- dbt;
+- Apache Airflow;
+- Data Warehouse;
+- modelagem dimensional;
+- testes e qualidade de dados;
+- observabilidade;
+- Power BI.
+
+---
+
+# Objetivo profissional
+
+Este projeto será o principal item do portfólio para vagas de:
+
+- Data Analyst;
+- BI Engineer;
+- Analytics Engineer;
+- Data Engineer.
+
+Toda decisão técnica deve priorizar:
+
+- simplicidade;
+- boas práticas;
+- escalabilidade;
+- documentação;
+- reprodutibilidade.
+
+---
+
+# Cenário
+
+Uma empresa fictícia chamada **Adventure Works** possui apenas um banco operacional.
+
+Os relatórios são lentos, inconsistentes e dependem diretamente do banco transacional. Para resolver esse problema, foi iniciado um projeto de modernização da plataforma analítica.
+
+Nossa missão é construir essa plataforma de ponta a ponta.
+
+---
+
+# Escopo
+
+O projeto contempla:
+
+- banco de dados operacional;
+- ingestão e replicação de dados;
+- camada `raw`;
+- camada `staging`;
+- camada `intermediate`;
+- camada `analytics`;
+- Data Warehouse dimensional;
+- testes de dados;
+- orquestração;
+- observabilidade;
+- dashboards;
+- documentação;
+- versionamento no GitHub.
+
+---
+
+# Arquitetura
 
 ```mermaid
-flowchart LR
-    A["AdventureWorks OLTP"] --> B["Ingestão Python"]
-    B --> C["PostgreSQL RAW"]
-    C --> D["dbt Staging"]
-    D --> E["dbt Intermediate"]
-    E --> F["dbt Analytics"]
+flowchart TD
+    A["AdventureWorks OLTP<br>PostgreSQL"] --> B["Airbyte<br>Extração e carga"]
+    B --> C["Data Warehouse<br>schema raw"]
+    C --> D["dbt<br>staging"]
+    D --> E["dbt<br>intermediate"]
+    E --> F["dbt<br>analytics"]
     F --> G["Power BI"]
+    H["Apache Airflow<br>Orquestração"] -. coordena .-> B
+    H -. coordena .-> D
 ```
 
-Airflow, cargas incrementais e fontes adicionais entram depois que o fluxo
-manual de ponta a ponta estiver funcionando.
+## Responsabilidades
 
-## Estado atual
+| Componente | Responsabilidade |
+| --- | --- |
+| AdventureWorks OLTP | Representar o banco transacional da empresa |
+| Airbyte | Extrair os dados da origem e carregá-los no schema `raw` |
+| PostgreSQL | Hospedar a origem transacional e o Data Warehouse |
+| dbt | Transformar os dados dentro do warehouse e construir as camadas analíticas |
+| Apache Airflow | Orquestrar ingestões, transformações, testes e demais tarefas do pipeline |
+| Power BI | Consumir os modelos do schema `analytics` |
+| Python | Simular alterações na origem e atender integrações específicas quando necessário |
 
-### Sprint 1 — Fundação
+> O dbt não transporta os dados da origem para o Data Warehouse. Ele executa transformações dentro do warehouse, a partir dos dados carregados pelo Airbyte no schema `raw`.
 
-- [x] Estrutura inicial do repositório
-- [x] PostgreSQL de origem e destino em Docker Compose
-- [x] Schemas analíticos criados automaticamente
-- [x] Variáveis de ambiente documentadas
-- [x] Escopo do modelo dimensional de vendas
-- [ ] Importar o AdventureWorks no banco de origem
-- [ ] Implementar a primeira carga Python para a camada RAW
+---
 
-Consulte [docs/sprint-01.md](docs/sprint-01.md) para o escopo e os critérios de
-aceite.
+# Camadas de dados
 
-## Como executar
+## `raw`
 
-### Pré-requisitos
+Dados replicados pelo Airbyte com mínima transformação, preservando a estrutura e os valores da origem.
 
-- Docker Desktop com Docker Compose
-- Git
+## `staging`
 
-### Inicialização
+Modelos dbt responsáveis por:
 
-1. Crie o arquivo local de configuração:
+- renomear colunas;
+- corrigir tipos;
+- padronizar valores;
+- realizar limpezas básicas;
+- preparar cada entidade para reutilização.
 
-   ```bash
-   cp .env.example .env
-   ```
+## `intermediate`
 
-2. Suba os bancos:
+Modelos dbt reutilizáveis que concentram:
 
-   ```bash
-   docker compose up -d
-   ```
+- junções;
+- regras de negócio;
+- enriquecimentos;
+- cálculos intermediários.
 
-3. Verifique os serviços:
+## `analytics`
 
-   ```bash
-   docker compose ps
-   ```
+Camada de consumo com fatos, dimensões e métricas confiáveis para análise e Power BI.
 
-4. Valide os schemas do Data Warehouse:
+---
 
-   ```bash
-   docker compose exec warehouse psql \
-     -U analytics_user \
-     -d analytics \
-     -c "\dn"
-   ```
+# Evolução do projeto
 
-Os serviços locais ficam disponíveis em:
+O AdventureWorks é um banco estático. Para aproximar o projeto de um ambiente corporativo, serão implementados simuladores de atualização.
 
-| Serviço | Host | Porta | Banco |
-| --- | --- | ---: | --- |
-| AdventureWorks OLTP | `localhost` | `5433` | `adventureworks` |
-| Data Warehouse | `localhost` | `5434` | `analytics` |
+Scripts Python serão responsáveis por:
 
-As credenciais de desenvolvimento estão no `.env`, que não deve ser versionado.
+- gerar novos pedidos;
+- criar novos clientes;
+- atualizar estoque;
+- alterar preços;
+- registrar devoluções;
+- registrar cancelamentos.
 
-### Encerramento
-
-```bash
-docker compose down
-```
-
-Para remover também os volumes e reiniciar os bancos do zero:
-
-```bash
-docker compose down -v
-```
-
-## Modelo dimensional inicial
-
-```mermaid
-erDiagram
-    DIM_DATE ||--o{ FACT_SALES : "order date"
-    DIM_CUSTOMER ||--o{ FACT_SALES : purchases
-    DIM_PRODUCT ||--o{ FACT_SALES : contains
-    DIM_SALES_TERRITORY ||--o{ FACT_SALES : occurs_in
-```
-
-O grão da `fact_sales` será **um item de um pedido de venda**. A seleção das
-tabelas de origem está documentada em
-[docs/source-to-target.md](docs/source-to-target.md).
-
-## Estrutura
+Esses scripts alterarão o banco transacional. Em seguida, o Airbyte replicará as mudanças para o schema `raw`, permitindo a implementação de cargas incrementais.
 
 ```text
-.
+Python simula eventos → AdventureWorks OLTP → Airbyte → raw → dbt → analytics
+```
+
+---
+
+# Fontes de dados
+
+## Fonte 1 — AdventureWorks
+
+- Tipo: banco relacional PostgreSQL;
+- Papel: ERP e principal origem transacional;
+- Ingestão: Airbyte.
+
+## Fonte 2 — CSV
+
+- Exemplo: metas comerciais.
+
+## Fonte 3 — Excel
+
+- Exemplo: orçamento.
+
+## Fonte 4 — API
+
+- Exemplo: cotação de moedas.
+
+## Fonte 5 — Dados sintéticos
+
+- Gerados por Python para simular movimentações diárias no banco operacional.
+
+---
+
+# Stack tecnológica
+
+| Categoria | Tecnologia |
+| --- | --- |
+| Banco de dados | PostgreSQL |
+| Ingestão e replicação | Airbyte |
+| Linguagem | Python |
+| Analytics Engineering | dbt |
+| Orquestração | Apache Airflow |
+| Containerização | Docker e Docker Compose |
+| Versionamento | Git e GitHub |
+| Visualização | Power BI |
+| Documentação | Markdown e Mermaid |
+
+---
+
+# Estrutura do repositório
+
+```text
+modern-data-platform/
+├── airflow/
 ├── database/
-│   └── init/
 ├── dbt/
 ├── docs/
 ├── ingestion/
 ├── powerbi/
 ├── tests/
-├── .env.example
-├── .gitignore
 ├── docker-compose.yml
+├── .env.example
 └── README.md
 ```
 
-## Roadmap
+O diretório `ingestion/` será reservado para configurações, scripts auxiliares e documentação de ingestão. A replicação principal entre os bancos será realizada pelo Airbyte.
 
-1. Fundação e importação do AdventureWorks
-2. Ingestão Python completa para RAW
-3. Modelos e testes dbt
-4. Dashboard comercial no Power BI
-5. Carga incremental e simulador de dados
-6. Orquestração com Airflow
-7. Novas fontes: metas, orçamento e câmbio
-8. Observabilidade e documentação final
+---
 
-## Stack
+# Ambiente local
 
-PostgreSQL, Python, dbt, Docker Compose, Git, Apache Airflow e Power BI.
+O ambiente inicial possui dois containers PostgreSQL:
+
+| Serviço | Banco | Porta local | Finalidade |
+| --- | --- | ---: | --- |
+| `source` | `adventureworks` | `5433` | Banco transacional |
+| `warehouse` | `analytics` | `5434` | Data Warehouse |
+
+O warehouse contém os schemas:
+
+- `raw`;
+- `staging`;
+- `intermediate`;
+- `analytics`.
+
+---
+
+# Roadmap
+
+## Sprint 1 — Infraestrutura e origem
+
+- [x] Criar o repositório;
+- [x] configurar Docker Compose;
+- [x] criar PostgreSQL de origem;
+- [x] criar PostgreSQL para o warehouse;
+- [x] criar os schemas analíticos;
+- [x] importar o AdventureWorks;
+- [x] validar tabelas e registros principais.
+
+## Sprint 2 — Ingestão
+
+- [ ] adicionar o Airbyte ao ambiente;
+- [ ] configurar a origem PostgreSQL;
+- [ ] configurar o destino PostgreSQL;
+- [ ] replicar as primeiras tabelas para o schema `raw`;
+- [ ] validar carga completa;
+- [ ] definir estratégia incremental.
+
+## Sprint 3 — Transformações com dbt
+
+- [ ] configurar o projeto dbt;
+- [ ] declarar as fontes do schema `raw`;
+- [ ] construir modelos `staging`;
+- [ ] construir modelos `intermediate`;
+- [ ] criar fatos e dimensões em `analytics`;
+- [ ] implementar testes e documentação.
+
+## Sprint 4 — Orquestração e observabilidade
+
+- [ ] configurar o Apache Airflow;
+- [ ] orquestrar Airbyte e dbt;
+- [ ] adicionar testes ao fluxo;
+- [ ] implementar logs, alertas e monitoramento.
+
+## Sprint 5 — Business Intelligence
+
+- [ ] conectar o Power BI ao schema `analytics`;
+- [ ] criar o modelo semântico;
+- [ ] desenvolver dashboards;
+- [ ] documentar métricas e decisões analíticas.
+
+---
+
+# Status atual
+
+A infraestrutura local e o banco transacional estão prontos. O AdventureWorks foi importado com **68 tabelas**, distribuídas nos schemas:
+
+- `humanresources`;
+- `person`;
+- `production`;
+- `purchasing`;
+- `sales`.
+
+O próximo passo é configurar o Airbyte para replicar os dados do banco `source` para o schema `raw` do warehouse.
