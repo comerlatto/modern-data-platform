@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Dados brutos carregados do banco transacional AdventureWorks.
+    database: analytics
+    schema: raw
+
+    tables:
+      - name: salesorderheader
+        description: Cabeçalho dos pedidos de venda.
+
+      - name: salesorderdetail
+        description: Itens dos pedidos de venda.
+
+      - name: customer
+        description: Cadastro de clientes.
+
+      - name: salesterritory
+        description: Territórios comerciais.
+
+      - name: product
+        description: Cadastro de produtos.
+
+      - name: person
+        description: Cadastro de pessoas.

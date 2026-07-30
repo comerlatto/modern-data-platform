@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: stg_salesorderheader
+    description: Pedidos de venda padronizados a partir da camada raw.
+
+    columns:
+      - name: sales_order_id
+        description: Identificador único do pedido.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: Identificador do cliente associado ao pedido.
+        data_tests:
+          - not_null
+
+      - name: order_date
+        description: Data em que o pedido foi realizado.
+        data_tests:
+          - not_null
