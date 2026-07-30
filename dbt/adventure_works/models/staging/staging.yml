@@ -66,3 +66,31 @@ models:
 
       - name: territory_id
         description: Identificador do território comercial associado ao cliente.
+
+  - name: stg_person
+    description: Pessoas padronizadas a partir da camada raw.
+
+    columns:
+      - name: business_entity_id
+        description: Identificador único da pessoa.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: person_type
+        description: Tipo de pessoa no AdventureWorks.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['EM', 'GC', 'IN', 'SC', 'SP', 'VC']
+
+      - name: first_name
+        description: Primeiro nome da pessoa.
+        data_tests:
+          - not_null
+
+      - name: last_name
+        description: Sobrenome da pessoa.
+        data_tests:
+          - not_null
