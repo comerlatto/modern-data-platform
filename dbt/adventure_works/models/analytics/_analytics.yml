@@ -12,9 +12,6 @@ models:
           Identificador único do produto no sistema de origem.
           Chave primária da dimensão.
         data_type: integer
-        constraints:
-          - type: not_null
-          - type: primary_key
         data_tests:
           - not_null
           - unique
@@ -164,10 +161,14 @@ models:
       - name: territory_id
         description: Identificador do território comercial associado ao cliente.
         data_type: integer
+        constraints:
+          - type: foreign_key
+            to: ref('dim_sales_territory')
+            to_columns: [territory_id]
         data_tests:
           - relationships:
               arguments:
-                to: ref('stg_salesterritory')
+                to: ref('dim_sales_territory')
                 field: territory_id
 
       - name: person_name
@@ -219,6 +220,91 @@ models:
 
       - name: _source_table
         description: Tabela de origem do cadastro do cliente.
+        data_type: text
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+
+  - name: dim_sales_territory
+    description: >
+      Dimensão de territórios comerciais, com uma linha por territory_id.
+      Contém os atributos geográficos e o agrupamento comercial de cada
+      território.
+
+    config:
+      materialized: table
+      contract:
+        enforced: true
+
+    columns:
+      - name: territory_id
+        description: Identificador único do território comercial.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: territory_name
+        description: Nome do território comercial.
+        data_type: character varying(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: country_region_code
+        description: Código do país ou da região associado ao território.
+        data_type: character varying(3)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: territory_group
+        description: Agrupamento geográfico do território comercial.
+        data_type: character varying(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Europe
+                  - North America
+                  - Pacific
+
+      - name: row_guid
+        description: Identificador global do registro no sistema de origem.
+        data_type: uuid
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: modified_at
+        description: Data e hora da última modificação no sistema de origem.
+        data_type: timestamp without time zone
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: _loaded_at
+        description: Data e hora em que o registro foi carregado na camada raw.
+        data_type: timestamp with time zone
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: _source_table
+        description: Tabela de origem do território comercial.
         data_type: text
         constraints:
           - type: not_null
