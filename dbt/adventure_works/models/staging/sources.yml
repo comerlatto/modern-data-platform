@@ -27,3 +27,12 @@ sources:
 
       - name: store
         description: Cadastro de lojas associadas aos clientes empresariais.
+
+      - name: specialoffer
+        description: Cadastro das ofertas especiais aplicadas aos produtos vendidos.
+
+      - name: salesperson
+        description: Cadastro e informações comerciais dos vendedores.
+
+      - name: employee
+        description: Cadastro profissional dos funcionários da empresa.

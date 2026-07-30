@@ -15,8 +15,11 @@ SOURCE_TABLES = [
     ("sales", "customer"),
     ("sales", "salesterritory"),
     ("sales", "store"),
+    ("sales", "specialoffer"),
+    ("sales", "salesperson"),
     ("production", "product"),
     ("person", "person"),
+    ("humanresources", "employee"),
 ]
 
 
