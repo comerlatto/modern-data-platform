@@ -96,7 +96,7 @@ models:
           - not_null
 
 
-          
+
 
   - name: stg_salesterritory
     description: Territórios comerciais padronizados a partir da camada raw.
@@ -120,5 +120,53 @@ models:
 
       - name: territory_group
         description: Grupo geográfico ao qual pertence o território.
+        data_tests:
+          - not_null
+
+
+
+  - name: stg_product
+    description: Produtos padronizados a partir da camada raw.
+
+    columns:
+      - name: product_id
+        description: Identificador único do produto.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: product_name
+        description: Nome do produto.
+        data_tests:
+          - not_null
+
+      - name: product_number
+        description: Código único de identificação do produto.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: is_manufactured
+        description: Indica se o produto é fabricado internamente.
+        data_tests:
+          - not_null
+
+      - name: is_finished_good
+        description: Indica se o produto está disponível para venda.
+        data_tests:
+          - not_null
+
+      - name: standard_cost
+        description: Custo padrão do produto.
+        data_tests:
+          - not_null
+
+      - name: list_price
+        description: Preço de tabela do produto.
+        data_tests:
+          - not_null
+
+      - name: sell_start_date
+        description: Data de início da comercialização.
         data_tests:
           - not_null
