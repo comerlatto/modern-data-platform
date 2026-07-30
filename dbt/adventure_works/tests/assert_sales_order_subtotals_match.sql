@@ -1,3 +1,7 @@
+-- Reconcilia o subtotal oficial dos pedidos com a soma líquida de seus itens.
+-- Retorna apenas pedidos com diferença superior a 0,01.
+-- Zero registros retornados significa que a reconciliação foi aprovada.
+
 with item_totals as (
 
     select
