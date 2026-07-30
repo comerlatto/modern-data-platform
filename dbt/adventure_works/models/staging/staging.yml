@@ -94,3 +94,31 @@ models:
         description: Sobrenome da pessoa.
         data_tests:
           - not_null
+
+
+          
+
+  - name: stg_salesterritory
+    description: Territórios comerciais padronizados a partir da camada raw.
+
+    columns:
+      - name: territory_id
+        description: Identificador único do território comercial.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: territory_name
+        description: Nome do território comercial.
+        data_tests:
+          - not_null
+
+      - name: country_region_code
+        description: Código do país ou região do território.
+        data_tests:
+          - not_null
+
+      - name: territory_group
+        description: Grupo geográfico ao qual pertence o território.
+        data_tests:
+          - not_null
