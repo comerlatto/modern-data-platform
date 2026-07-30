@@ -20,3 +20,35 @@ models:
         description: Data em que o pedido foi realizado.
         data_tests:
           - not_null
+
+          
+
+  - name: stg_salesorderdetail
+    description: Itens dos pedidos de venda padronizados a partir da camada raw.
+
+    columns:
+      - name: sales_order_detail_id
+        description: Identificador único do item do pedido.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_order_id
+        description: Identificador do pedido ao qual o item pertence.
+        data_tests:
+          - not_null
+
+      - name: product_id
+        description: Identificador do produto vendido.
+        data_tests:
+          - not_null
+
+      - name: order_quantity
+        description: Quantidade vendida do produto.
+        data_tests:
+          - not_null
+
+      - name: unit_price
+        description: Preço unitário do produto no pedido.
+        data_tests:
+          - not_null
