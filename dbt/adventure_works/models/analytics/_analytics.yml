@@ -310,3 +310,166 @@ models:
           - type: not_null
         data_tests:
           - not_null
+
+
+  - name: dim_date
+    description: >
+      Dimensão de calendário com uma linha por dia. O intervalo começa no
+      primeiro dia do ano da menor data encontrada nos pedidos e termina no
+      último dia do horizonte futuro configurado. Pode ser utilizada como
+      dimensão de data do pedido, data prevista e data de envio.
+
+    config:
+      materialized: table
+      contract:
+        enforced: true
+
+    columns:
+      - name: date_id
+        description: Chave da data no formato numérico YYYYMMDD.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: full_date
+        description: Data completa do calendário.
+        data_type: date
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+          - unique
+
+      - name: year_number
+        description: Ano-calendário da data.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: semester_number
+        description: Número do semestre, sendo 1 ou 2.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+              quote: false
+
+      - name: quarter_number
+        description: Número do trimestre, de 1 a 4.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+              quote: false
+
+      - name: year_quarter
+        description: Identificação do ano e trimestre, como 2026-Q3.
+        data_type: text
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: month_number
+        description: Número do mês, de 1 a 12.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+              quote: false
+
+      - name: month_name
+        description: Nome do mês em português.
+        data_type: text
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: year_month
+        description: Identificação do ano e mês no formato YYYY-MM.
+        data_type: text
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: iso_week_number
+        description: Número da semana segundo o padrão ISO 8601.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: iso_week_year
+        description: Ano ao qual a semana pertence segundo o padrão ISO 8601.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: year_iso_week
+        description: Identificação do ano e da semana ISO, como 2022-W01.
+        data_type: text
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: day_of_month
+        description: Número do dia dentro do mês, de 1 a 31.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: day_of_week_number
+        description: >
+          Número ISO do dia da semana, sendo segunda-feira igual a 1 e
+          domingo igual a 7.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7]
+              quote: false
+
+      - name: day_of_week_name
+        description: Nome do dia da semana em português.
+        data_type: text
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: is_weekend
+        description: Indica se a data corresponde a sábado ou domingo.
+        data_type: boolean
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null

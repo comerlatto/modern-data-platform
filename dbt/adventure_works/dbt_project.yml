@@ -34,3 +34,7 @@ models:
   adventure_works:
     staging:
       +materialized: view
+
+
+vars:
+  dim_date_future_years: 2
