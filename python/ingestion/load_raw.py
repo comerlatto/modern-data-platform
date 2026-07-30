@@ -14,6 +14,7 @@ SOURCE_TABLES = [
     ("sales", "salesorderdetail"),
     ("sales", "customer"),
     ("sales", "salesterritory"),
+    ("sales", "store"),
     ("production", "product"),
     ("person", "person"),
 ]
@@ -59,7 +60,7 @@ def get_columns(
       AND table_metadata.relname = %s
       AND attribute.attnum > 0
       AND NOT attribute.attisdropped
-    ORDER BY attribute.attnuma
+    ORDER BY attribute.attnum
     """
 
     with source_conn.cursor() as cursor:
@@ -87,7 +88,9 @@ def recreate_raw_table(
         ]
     )
 
-    drop_query = sql.SQL("DROP TABLE IF EXISTS raw.{}").format(
+    drop_query = sql.SQL(
+        "DROP TABLE IF EXISTS raw.{} CASCADE"
+    ).format(
         sql.Identifier(table_name)
     )
 

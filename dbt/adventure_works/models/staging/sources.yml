@@ -24,3 +24,6 @@ sources:
 
       - name: person
         description: Cadastro de pessoas.
+
+      - name: store
+        description: Cadastro de lojas associadas aos clientes empresariais.
