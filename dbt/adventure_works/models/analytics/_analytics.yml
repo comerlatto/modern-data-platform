@@ -1,0 +1,116 @@
+version: 2
+
+models:
+  - name: dim_product
+    description: >
+      Dimensão de produtos utilizada nas análises de vendas.
+      Grão: uma linha por produto, identificado por product_id.
+
+    columns:
+      - name: product_id
+        description: >
+          Identificador único do produto no sistema de origem.
+          Chave primária da dimensão.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: product_name
+        description: Nome descritivo do produto.
+        data_type: varchar(50)
+        constraints:
+          - type: not_null
+
+      - name: product_number
+        description: Código comercial utilizado para identificar o produto.
+        data_type: varchar(25)
+        constraints:
+          - type: not_null
+
+      - name: is_manufactured
+        description: Indica se o produto é fabricado internamente.
+        data_type: boolean
+
+      - name: is_finished_good
+        description: Indica se o produto está pronto para comercialização.
+        data_type: boolean
+
+      - name: color
+        description: Cor cadastrada para o produto.
+        data_type: varchar(15)
+
+      - name: size
+        description: Tamanho cadastrado para o produto.
+        data_type: varchar(5)
+
+      - name: size_unit_measure_code
+        description: Unidade de medida utilizada para o tamanho.
+        data_type: varchar(3)
+
+      - name: weight
+        description: Peso cadastrado do produto.
+        data_type: numeric(8, 2)
+
+      - name: weight_unit_measure_code
+        description: Unidade de medida utilizada para o peso.
+        data_type: varchar(3)
+
+      - name: product_line
+        description: Código da linha comercial do produto.
+        data_type: varchar(2)
+
+      - name: product_class
+        description: Código da classificação do produto.
+        data_type: varchar(2)
+
+      - name: product_style
+        description: Código do estilo do produto.
+        data_type: varchar(2)
+
+      - name: safety_stock_level
+        description: Quantidade mínima recomendada para estoque de segurança.
+        data_type: smallint
+
+      - name: reorder_point
+        description: Nível de estoque que indica necessidade de reposição.
+        data_type: smallint
+
+      - name: days_to_manufacture
+        description: Quantidade estimada de dias para fabricar o produto.
+        data_type: integer
+
+      - name: standard_cost
+        description: >
+          Custo padrão atual do produto. Não representa necessariamente
+          o custo histórico no momento da venda.
+        data_type: numeric(19, 4)
+
+      - name: list_price
+        description: >
+          Preço de lista atual do produto. Não representa necessariamente
+          o preço praticado em uma venda.
+        data_type: numeric(19, 4)
+
+      - name: product_subcategory_id
+        description: Identificador da subcategoria do produto.
+        data_type: integer
+
+      - name: product_model_id
+        description: Identificador do modelo do produto.
+        data_type: integer
+
+      - name: sell_start_date
+        description: Data e hora de início da comercialização.
+        data_type: timestamp
+
+      - name: sell_end_date
+        description: Data e hora de encerramento da comercialização.
+        data_type: timestamp
+
+      - name: discontinued_date
+        description: Data e hora em que o produto foi descontinuado.
+        data_type: timestamp

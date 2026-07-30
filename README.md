@@ -1,302 +1,525 @@
-# Modern Data Platform Portfolio
+\# Modern Data Platform Portfolio
 
-> Projeto de portfólio para construção de uma plataforma analítica moderna, utilizando boas práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
+\> Projeto de portfólio para construção de uma plataforma analítica moderna utilizando boas práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
 
----
+\---
 
-# Visão do projeto
+\# Visão do Projeto
 
-O objetivo não é apenas construir um dashboard.
+O objetivo NÃO é construir um dashboard.
 
-O projeto simula a implantação de uma plataforma de dados em uma empresa real, com arquitetura, documentação e padrões utilizados por equipes de dados.
+O objetivo é simular a implantação de uma plataforma de dados de uma empresa real.
 
----
+Este projeto será desenvolvido como se fosse um projeto corporativo, seguindo arquitetura, documentação e padrões utilizados em equipes de dados.
 
-# Objetivos
+\---
+
+\# Objetivos
 
 Demonstrar experiência prática em:
 
-- SQL;
-- PostgreSQL;
-- Airbyte;
-- Python;
-- Docker e Docker Compose;
-- Git e GitHub;
-- dbt;
-- Apache Airflow;
-- Data Warehouse;
-- modelagem dimensional;
-- testes e qualidade de dados;
-- observabilidade;
-- Power BI.
+\- SQL  
+\- PostgreSQL  
+\- Python  
+\- Docker  
+\- Git  
+\- GitHub  
+\- dbt  
+\- Apache Airflow  
+\- Data Warehouse  
+\- Modelagem Dimensional  
+\- Testes de Dados  
+\- Observabilidade  
+\- Power BI
 
----
+\---
 
-# Objetivo profissional
+\# Objetivo Profissional
 
-Este projeto será o principal item do portfólio para vagas de:
+Este projeto servirá como principal item do portfólio para vagas de:
 
-- Data Analyst;
-- BI Engineer;
-- Analytics Engineer;
-- Data Engineer.
+\- Data Analyst  
+\- BI Engineer  
+\- Analytics Engineer  
+\- Data Engineer
 
 Toda decisão técnica deve priorizar:
 
-- simplicidade;
-- boas práticas;
-- escalabilidade;
-- documentação;
-- reprodutibilidade.
+\- simplicidade  
+\- boas práticas  
+\- escalabilidade  
+\- documentação  
+\- reprodutibilidade
 
----
+\---
 
-# Cenário
+\# Cenário
 
-Uma empresa fictícia chamada **Adventure Works** possui apenas um banco operacional.
+Uma empresa fictícia chamada \*\*Adventure Works\*\* possui apenas um banco operacional.
 
-Os relatórios são lentos, inconsistentes e dependem diretamente do banco transacional. Para resolver esse problema, foi iniciado um projeto de modernização da plataforma analítica.
+Os relatórios são lentos, inconsistentes e dependem diretamente do banco transacional.
 
-Nossa missão é construir essa plataforma de ponta a ponta.
+Foi iniciado um projeto de modernização da plataforma analítica.
 
----
+Nossa missão será construir toda essa plataforma.
 
-# Escopo
+\---
 
-O projeto contempla:
+\# Escopo
 
-- banco de dados operacional;
-- ingestão e replicação de dados;
-- camada `raw`;
-- camada `staging`;
-- camada `intermediate`;
-- camada `analytics`;
-- Data Warehouse dimensional;
-- testes de dados;
-- orquestração;
-- observabilidade;
-- dashboards;
-- documentação;
-- versionamento no GitHub.
+Construiremos:
 
----
+✔ Banco operacional
 
-# Arquitetura
+✔ Camada RAW
 
-```mermaid
-flowchart TD
-    A["AdventureWorks OLTP<br>PostgreSQL"] --> B["Airbyte<br>Extração e carga"]
-    B --> C["Data Warehouse<br>schema raw"]
-    C --> D["dbt<br>staging"]
-    D --> E["dbt<br>intermediate"]
-    E --> F["dbt<br>analytics"]
-    F --> G["Power BI"]
-    H["Apache Airflow<br>Orquestração"] -. coordena .-> B
-    H -. coordena .-> D
-```
+✔ Camada STAGING
 
-## Responsabilidades
+✔ Camada INTERMEDIATE
 
-| Componente | Responsabilidade |
-| --- | --- |
-| AdventureWorks OLTP | Representar o banco transacional da empresa |
-| Airbyte | Extrair os dados da origem e carregá-los no schema `raw` |
-| PostgreSQL | Hospedar a origem transacional e o Data Warehouse |
-| dbt | Transformar os dados dentro do warehouse e construir as camadas analíticas |
-| Apache Airflow | Orquestrar ingestões, transformações, testes e demais tarefas do pipeline |
-| Power BI | Consumir os modelos do schema `analytics` |
-| Python | Simular alterações na origem e atender integrações específicas quando necessário |
+✔ Data Warehouse
 
-> O dbt não transporta os dados da origem para o Data Warehouse. Ele executa transformações dentro do warehouse, a partir dos dados carregados pelo Airbyte no schema `raw`.
+✔ Testes
 
----
+✔ Orquestração
 
-# Camadas de dados
+✔ Dashboards
 
-## `raw`
+✔ Documentação
 
-Dados replicados pelo Airbyte com mínima transformação, preservando a estrutura e os valores da origem.
+✔ GitHub
 
-## `staging`
+\---
 
-Modelos dbt responsáveis por:
+\# Arquitetura
 
-- renomear colunas;
-- corrigir tipos;
-- padronizar valores;
-- realizar limpezas básicas;
-- preparar cada entidade para reutilização.
+                    AdventureWorks OLTP  
+                             │  
+                      Python Ingestion  
+                             │  
+                    PostgreSQL (RAW)  
+                             │  
+                      dbt \- Staging  
+                             │  
+                   dbt \- Intermediate  
+                             │  
+                 dbt \- Data Warehouse  
+                             │  
+                      dbt Tests  
+                             │  
+                  Apache Airflow  
+                             │  
+                       Power BI
 
-## `intermediate`
+\---
 
-Modelos dbt reutilizáveis que concentram:
+\# Evolução do Projeto
 
-- junções;
-- regras de negócio;
-- enriquecimentos;
-- cálculos intermediários.
+O AdventureWorks é um banco ESTÁTICO.
 
-## `analytics`
+Para aproximar o projeto de um ambiente corporativo serão implementados simuladores de atualização.
 
-Camada de consumo com fatos, dimensões e métricas confiáveis para análise e Power BI.
+Serão desenvolvidos scripts Python responsáveis por:
 
----
+\- gerar novos pedidos  
+\- criar novos clientes  
+\- atualizar estoque  
+\- alterar preços  
+\- registrar devoluções  
+\- registrar cancelamentos
 
-# Evolução do projeto
+Dessa forma o pipeline possuirá cargas incrementais diárias.
 
-O AdventureWorks é um banco estático. Para aproximar o projeto de um ambiente corporativo, serão implementados simuladores de atualização.
+\---
 
-Scripts Python serão responsáveis por:
+\# Fontes de Dados
 
-- gerar novos pedidos;
-- criar novos clientes;
-- atualizar estoque;
-- alterar preços;
-- registrar devoluções;
-- registrar cancelamentos.
+\#\# Fonte 1
 
-Esses scripts alterarão o banco transacional. Em seguida, o Airbyte replicará as mudanças para o schema `raw`, permitindo a implementação de cargas incrementais.
+AdventureWorks (ERP)
 
-```text
-Python simula eventos → AdventureWorks OLTP → Airbyte → raw → dbt → analytics
-```
+Tipo:
 
----
+Banco relacional
 
-# Fontes de dados
+\---
 
-## Fonte 1 — AdventureWorks
+\#\# Fonte 2
 
-- Tipo: banco relacional PostgreSQL;
-- Papel: ERP e principal origem transacional;
-- Ingestão: Airbyte.
+Arquivo CSV
 
-## Fonte 2 — CSV
+Exemplo:
 
-- Exemplo: metas comerciais.
+Metas comerciais
 
-## Fonte 3 — Excel
+\---
 
-- Exemplo: orçamento.
+\#\# Fonte 3
 
-## Fonte 4 — API
+Excel
 
-- Exemplo: cotação de moedas.
+Exemplo:
 
-## Fonte 5 — Dados sintéticos
+Orçamento
 
-- Gerados por Python para simular movimentações diárias no banco operacional.
+\---
 
----
+\#\# Fonte 4
 
-# Stack tecnológica
+API
 
-| Categoria | Tecnologia |
-| --- | --- |
-| Banco de dados | PostgreSQL |
-| Ingestão e replicação | Airbyte |
-| Linguagem | Python |
-| Analytics Engineering | dbt |
-| Orquestração | Apache Airflow |
-| Containerização | Docker e Docker Compose |
-| Versionamento | Git e GitHub |
-| Visualização | Power BI |
-| Documentação | Markdown e Mermaid |
+Exemplo:
 
----
+Cotação de moedas
 
-# Estrutura do repositório
+\---
 
-```text
-modern-data-platform/
-├── airflow/
-├── database/
-├── dbt/
-├── docs/
-├── ingestion/
-├── powerbi/
-├── tests/
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
+\#\# Fonte 5
 
-O diretório `ingestion/` será reservado para configurações, scripts auxiliares e documentação de ingestão. A replicação principal entre os bancos será realizada pelo Airbyte.
+Dados sintéticos
 
----
+Gerados diariamente por Python.
 
-# Ambiente local
+\---
 
-O ambiente inicial possui dois containers PostgreSQL:
+\# Stack Tecnológica
 
-| Serviço | Banco | Porta local | Finalidade |
-| --- | --- | ---: | --- |
-| `source` | `adventureworks` | `5433` | Banco transacional |
-| `warehouse` | `analytics` | `5434` | Data Warehouse |
+Banco
 
-O warehouse contém os schemas:
+\- PostgreSQL
 
-- `raw`;
-- `staging`;
-- `intermediate`;
-- `analytics`.
+Linguagem
 
----
+\- Python
 
-# Roadmap
+Analytics Engineering
 
-## Sprint 1 — Infraestrutura e origem
+\- dbt
 
-- [x] Criar o repositório;
-- [x] configurar Docker Compose;
-- [x] criar PostgreSQL de origem;
-- [x] criar PostgreSQL para o warehouse;
-- [x] criar os schemas analíticos;
-- [x] importar o AdventureWorks;
-- [x] validar tabelas e registros principais.
+Orquestração
 
-## Sprint 2 — Ingestão
+\- Apache Airflow
 
-- [ ] adicionar o Airbyte ao ambiente;
-- [ ] configurar a origem PostgreSQL;
-- [ ] configurar o destino PostgreSQL;
-- [ ] replicar as primeiras tabelas para o schema `raw`;
-- [ ] validar carga completa;
-- [ ] definir estratégia incremental.
+Containerização
 
-## Sprint 3 — Transformações com dbt
+\- Docker  
+\- Docker Compose
 
-- [ ] configurar o projeto dbt;
-- [ ] declarar as fontes do schema `raw`;
-- [ ] construir modelos `staging`;
-- [ ] construir modelos `intermediate`;
-- [ ] criar fatos e dimensões em `analytics`;
-- [ ] implementar testes e documentação.
+Versionamento
 
-## Sprint 4 — Orquestração e observabilidade
+\- Git  
+\- GitHub
 
-- [ ] configurar o Apache Airflow;
-- [ ] orquestrar Airbyte e dbt;
-- [ ] adicionar testes ao fluxo;
-- [ ] implementar logs, alertas e monitoramento.
+Visualização
 
-## Sprint 5 — Business Intelligence
+\- Power BI
 
-- [ ] conectar o Power BI ao schema `analytics`;
-- [ ] criar o modelo semântico;
-- [ ] desenvolver dashboards;
-- [ ] documentar métricas e decisões analíticas.
+Documentação
 
----
+\- Markdown  
+\- Mermaid
 
-# Status atual
+\---
 
-A infraestrutura local e o banco transacional estão prontos. O AdventureWorks foi importado com **68 tabelas**, distribuídas nos schemas:
+\# Estrutura do Repositório
 
-- `humanresources`;
-- `person`;
-- `production`;
-- `purchasing`;
-- `sales`.
+\`\`\`  
+project/
 
-O próximo passo é configurar o Airbyte para replicar os dados do banco `source` para o schema `raw` do warehouse.
+airflow/  
+database/  
+docker/  
+python/  
+dbt/  
+powerbi/  
+docs/  
+tests/
+
+README.md  
+docker-compose.yml  
+\`\`\`
+
+\---
+
+\# Padrões da Camada Analytics
+
+A camada \*\*analytics\*\* será a interface confiável para consumo pelo Power BI, por outras aplicações e, futuramente, por agentes de IA.
+
+Todos os modelos dessa camada deverão seguir os seguintes padrões:
+
+\- materialização como `table`  
+\- contrato de dados obrigatório com `contract.enforced: true`  
+\- declaração de todas as colunas e seus respectivos `data_type` no arquivo YAML  
+\- descrição do modelo, incluindo explicitamente o seu grão  
+\- descrição de todas as colunas  
+\- declaração de chaves primárias e estrangeiras por meio de `constraints`  
+\- testes de dados para validar as regras declaradas
+
+A configuração padrão no `dbt_project.yml` será:
+
+\`\`\`yaml
+models:
+  adventure_works:
+    staging:
+      +materialized: view
+
+    intermediate:
+      +materialized: view
+
+    analytics:
+      +materialized: table
+      +contract:
+        enforced: true
+\`\`\`
+
+O contrato garante que os nomes e os tipos das colunas produzidas pelo SQL correspondam ao que foi declarado no YAML. Entretanto, o dbt não torna o preenchimento de `description` obrigatório apenas com `contract.enforced`; essa exigência deverá ser validada futuramente no processo de CI.
+
+\#\# Chaves e relacionamentos
+
+As chaves deverão ser documentadas de forma explícita para facilitar a compreensão do modelo dimensional por pessoas, ferramentas de BI e agentes de IA.
+
+Para uma chave primária:
+
+\`\`\`yaml
+- name: product_id
+  description: Identificador único do produto. Chave primária da dimensão.
+  data_type: integer
+  constraints:
+    - type: not_null
+    - type: primary_key
+  data_tests:
+    - not_null
+    - unique
+\`\`\`
+
+Para uma chave estrangeira:
+
+\`\`\`yaml
+- name: product_id
+  description: Identificador do produto vendido. Chave estrangeira para dim_product.
+  data_type: integer
+  constraints:
+    - type: not_null
+    - type: foreign_key
+      to: ref('dim_product')
+      to_columns: [product_id]
+  data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('dim_product')
+          field: product_id
+\`\`\`
+
+Uma chave estrangeira somente será declarada quando o modelo referenciado já existir. As `constraints` registram a estrutura e os relacionamentos, enquanto os `data_tests` validam efetivamente a qualidade e a integridade dos dados durante a execução do dbt.
+
+O uso conjunto de `ref()`, `constraints` e testes de `relationships` será o padrão do projeto:
+
+\- `ref()` registra a dependência e o lineage no dbt  
+\- `constraints` documentam PKs, FKs e obrigatoriedade nos metadados  
+\- `unique`, `not_null` e `relationships` verificam os dados
+
+\---
+
+\# Roadmap
+
+\#\# Sprint 1
+
+Infraestrutura
+
+\- Docker  
+\- PostgreSQL  
+\- Git  
+\- GitHub  
+\- AdventureWorks
+
+Status
+
+⬜ Não iniciado
+
+\---
+
+\#\# Sprint 2
+
+Ingestão
+
+\- Python  
+\- RAW  
+\- Logs  
+\- Incremental
+
+Status
+
+⬜ Não iniciado
+
+\---
+
+\#\# Sprint 3
+
+Data Warehouse
+
+\- Star Schema  
+\- Dimensões  
+\- Fatos
+
+Status
+
+⬜ Não iniciado
+
+\---
+
+\#\# Sprint 4
+
+dbt
+
+\- staging  
+\- intermediate  
+\- marts  
+\- documentação  
+\- testes
+
+Status
+
+⬜ Não iniciado
+
+\---
+
+\#\# Sprint 5
+
+Airflow
+
+\- DAG  
+\- Scheduler  
+\- Retry  
+\- Logs  
+\- Alertas
+
+Status
+
+⬜ Não iniciado
+
+\---
+
+\#\# Sprint 6
+
+Power BI
+
+Dashboards:
+
+\- Executivo  
+\- Comercial  
+\- Produtos  
+\- Clientes
+
+Status
+
+⬜ Não iniciado
+
+\---
+
+\# Arquitetura de Dados
+
+(Será desenhada durante o projeto.)
+
+\---
+
+\# Modelo Dimensional
+
+(Será documentado durante o projeto.)
+
+\---
+
+\# Data Dictionary
+
+(Será construído durante o projeto.)
+
+\---
+
+\# Data Lineage
+
+(Será gerado pelo dbt.)
+
+\---
+
+\# Data Quality
+
+Serão implementados testes como:
+
+\- not null  
+\- unique  
+\- accepted values  
+\- relationships  
+\- duplicate detection  
+\- business rules
+
+\---
+
+\# Observabilidade
+
+Pretendemos monitorar:
+
+\- tempo de execução  
+\- falhas  
+\- retries  
+\- quantidade de registros  
+\- tabelas carregadas  
+\- testes executados
+
+\---
+
+\# ADR (Architecture Decision Records)
+
+Todas as decisões arquiteturais deverão ser registradas.
+
+\#\# ADR-001
+
+Banco escolhido
+
+PostgreSQL
+
+Motivos
+
+\- Open Source  
+\- Compatível com dbt  
+\- Excelente integração com Airflow  
+\- Fácil utilização via Docker
+
+\---
+
+\# Lições Aprendidas
+
+Será atualizado ao longo do projeto.
+
+\---
+
+\# Backlog
+
+Lista de melhorias futuras.
+
+\---
+
+\# Ideias Futuras
+
+\- CDC  
+\- Kafka  
+\- MinIO  
+\- DuckDB  
+\- Snowflake  
+\- Terraform  
+\- CI/CD  
+\- GitHub Actions  
+\- Testes automatizados  
+\- Deploy em nuvem
+
+\---
+
+\# Próxima Sprint
+
+Criar toda a infraestrutura local utilizando Docker Compose contendo:
+
+\- PostgreSQL  
+\- pgAdmin  
+\- Airflow  
+\- dbt  
+\- Volume persistente  
+\- Estrutura inicial do GitHub  
