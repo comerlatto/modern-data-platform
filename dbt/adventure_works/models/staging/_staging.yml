@@ -173,7 +173,7 @@ models:
 
 
 
-          
+
 
   - name: stg_store
     description: >
@@ -197,6 +197,83 @@ models:
 
       - name: demographics
         description: Informações demográficas da loja armazenadas em XML.
+
+      - name: row_guid
+        description: Identificador global do registro no sistema de origem.
+        data_tests:
+          - not_null
+
+      - name: modified_at
+        description: Data e hora da última modificação no sistema de origem.
+        data_tests:
+          - not_null
+
+      - name: _loaded_at
+        description: Data e hora em que o registro foi carregado na camada raw.
+        data_tests:
+          - not_null
+
+      - name: _source_table
+        description: Tabela de origem do registro.
+        data_tests:
+          - not_null
+
+
+
+
+  - name: stg_specialoffer
+    description: >
+      Ofertas especiais padronizadas a partir da camada raw. Contém as regras
+      comerciais de desconto, período de validade e limites de quantidade.
+
+    columns:
+      - name: special_offer_id
+        description: Identificador único da oferta especial.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: special_offer_description
+        description: Descrição comercial da oferta especial.
+        data_tests:
+          - not_null
+
+      - name: discount_percentage
+        description: >
+          Percentual de desconto armazenado em formato decimal. Por exemplo,
+          0.10 representa um desconto de 10%.
+        data_tests:
+          - not_null
+
+      - name: offer_type
+        description: Tipo da oferta especial.
+        data_tests:
+          - not_null
+
+      - name: offer_category
+        description: Categoria à qual pertence a oferta especial.
+        data_tests:
+          - not_null
+
+      - name: start_date
+        description: Data e hora de início da validade da oferta.
+        data_tests:
+          - not_null
+
+      - name: end_date
+        description: Data e hora de término da validade da oferta.
+        data_tests:
+          - not_null
+
+      - name: minimum_quantity
+        description: Quantidade mínima necessária para aplicação da oferta.
+        data_tests:
+          - not_null
+
+      - name: maximum_quantity
+        description: >
+          Quantidade máxima permitida para aplicação da oferta. Pode ser nula
+          quando a oferta não possui limite máximo.
 
       - name: row_guid
         description: Identificador global do registro no sistema de origem.
