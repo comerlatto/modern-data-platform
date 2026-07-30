@@ -59,7 +59,7 @@ def get_columns(
       AND table_metadata.relname = %s
       AND attribute.attnum > 0
       AND NOT attribute.attisdropped
-    ORDER BY attribute.attnum
+    ORDER BY attribute.attnuma
     """
 
     with source_conn.cursor() as cursor:
