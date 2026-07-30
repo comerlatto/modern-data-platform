@@ -21,7 +21,7 @@ models:
         data_tests:
           - not_null
 
-          
+
 
   - name: stg_salesorderdetail
     description: Itens dos pedidos de venda padronizados a partir da camada raw.
@@ -52,3 +52,17 @@ models:
         description: Preço unitário do produto no pedido.
         data_tests:
           - not_null
+
+
+  - name: stg_customer
+    description: Clientes padronizados a partir da camada raw.
+
+    columns:
+      - name: customer_id
+        description: Identificador único do cliente.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: territory_id
+        description: Identificador do território comercial associado ao cliente.
