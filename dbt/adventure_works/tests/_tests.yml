@@ -40,3 +40,16 @@ data_tests:
       O valor é armazenado como proporção, portanto 0,02 representa uma
       comissão de 2%. O teste falha quando encontra uma comissão negativa
       ou superior a 100%.
+
+
+  - name: assert_employee_dates_are_valid
+    description: >
+      Valida a consistência cronológica das datas dos funcionários. O teste
+      falha quando encontra nascimento ou contratação no futuro, ou quando a
+      contratação ocorre antes ou na mesma data do nascimento. Não valida idade
+      mínima para contratação, pois essa regra de negócio não foi confirmada.
+
+  - name: assert_employee_hours_are_non_negative
+    description: >
+      Valida que os saldos de horas de férias e de licença médica dos
+      funcionários não sejam negativos.

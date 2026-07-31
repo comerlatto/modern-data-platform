@@ -352,3 +352,109 @@ models:
         description: Nome da tabela de origem do registro.
         data_tests:
           - not_null
+
+
+  - name: stg_employee
+    description: >
+      Padroniza os dados dos funcionários provenientes da tabela raw.employee.
+      O modelo preserva informações pessoais, profissionais, hierárquicas e
+      metadados técnicos da ingestão, sem aplicar cálculos derivados.
+
+    columns:
+      - name: business_entity_id
+        description: Identificador único do funcionário.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: national_id_number
+        description: Número de identificação nacional do funcionário.
+        data_tests:
+          - not_null
+
+      - name: login_id
+        description: Identificador de login do funcionário.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: job_title
+        description: Cargo ocupado pelo funcionário.
+        data_tests:
+          - not_null
+
+      - name: birth_date
+        description: Data de nascimento do funcionário.
+        data_tests:
+          - not_null
+
+      - name: marital_status
+        description: >
+          Estado civil do funcionário. M representa casado e S representa
+          solteiro.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['M', 'S']
+
+      - name: gender
+        description: >
+          Código de gênero do funcionário. F representa feminino e M representa
+          masculino.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['F', 'M']
+
+      - name: hire_date
+        description: Data de contratação do funcionário.
+        data_tests:
+          - not_null
+
+      - name: is_salaried
+        description: Indica se o funcionário recebe salário fixo.
+        data_tests:
+          - not_null
+
+      - name: vacation_hours
+        description: Saldo de horas de férias do funcionário.
+        data_tests:
+          - not_null
+
+      - name: sick_leave_hours
+        description: Saldo de horas de licença médica do funcionário.
+        data_tests:
+          - not_null
+
+      - name: is_current
+        description: Indica se o registro do funcionário está ativo.
+        data_tests:
+          - not_null
+
+      - name: row_guid
+        description: Identificador global do registro no sistema de origem.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: modified_at
+        description: Data e hora da última modificação no sistema de origem.
+        data_tests:
+          - not_null
+
+      - name: organization_node
+        description: Caminho hierárquico do funcionário na organização.
+        data_tests:
+          - not_null
+
+      - name: _loaded_at
+        description: Data e hora em que o registro foi carregado na camada raw.
+        data_tests:
+          - not_null
+
+      - name: _source_table
+        description: Tabela de origem do registro.
+        data_tests:
+          - not_null
