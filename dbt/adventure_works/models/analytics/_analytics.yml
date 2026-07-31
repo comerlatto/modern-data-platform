@@ -952,3 +952,175 @@ models:
           - type: not_null
         data_tests:
           - not_null
+
+
+  - name: mart_sales_details
+    description: >
+      Mart de consumo com os itens de venda enriquecidos por atributos
+      descritivos de produto, cliente, vendedor, território e oferta especial.
+      Destinado a consultas analíticas, exploração de dados e consumo por
+      ferramentas de BI. Grão: uma linha por item do pedido.
+
+    columns:
+      - name: sales_order_detail_id
+        description: Identificador único do item do pedido.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_order_id
+        description: Identificador do pedido ao qual o item pertence.
+        data_tests:
+          - not_null
+
+      - name: order_date_id
+        description: Chave da data em que o pedido foi realizado, no formato YYYYMMDD.
+        data_tests:
+          - not_null
+
+      - name: due_date_id
+        description: Chave da data prevista para entrega, no formato YYYYMMDD.
+        data_tests:
+          - not_null
+
+      - name: ship_date_id
+        description: >
+          Chave da data de envio, no formato YYYYMMDD. Pode ser nula quando
+          o pedido ainda não foi enviado.
+
+      - name: product_name
+        description: Nome do produto vendido.
+        data_tests:
+          - not_null
+
+      - name: product_number
+        description: Código comercial do produto.
+        data_tests:
+          - not_null
+
+      - name: product_subcategory_id
+        description: Identificador da subcategoria do produto, quando definida.
+
+      - name: product_model_id
+        description: Identificador do modelo do produto, quando definido.
+
+      - name: product_color
+        description: Cor do produto, quando informada.
+
+      - name: product_size
+        description: Tamanho do produto, quando informado.
+
+      - name: product_line
+        description: Linha comercial do produto.
+
+      - name: product_class
+        description: Classificação comercial do produto.
+
+      - name: product_style
+        description: Estilo do produto.
+
+      - name: customer_name
+        description: >
+          Nome legível do cliente. Para clientes empresariais, apresenta
+          prioritariamente o nome da loja; para clientes individuais,
+          apresenta o nome da pessoa.
+        data_tests:
+          - not_null
+
+      - name: customer_type
+        description: Classificação do cliente como pessoa, loja ou loja associada a uma pessoa.
+        data_tests:
+          - not_null
+
+      - name: sales_person_name
+        description: >
+          Nome completo do vendedor responsável. Pode ser nulo em vendas
+          realizadas pela internet.
+
+      - name: sales_person_job_title
+        description: >
+          Cargo do vendedor responsável. Pode ser nulo quando a venda não
+          possui vendedor associado.
+
+      - name: territory_name
+        description: Nome do território comercial associado à venda.
+        data_tests:
+          - not_null
+
+      - name: country_region_code
+        description: Código do país ou região do território comercial.
+        data_tests:
+          - not_null
+
+      - name: territory_group
+        description: Grupo geográfico ao qual o território pertence.
+        data_tests:
+          - not_null
+
+      - name: special_offer_description
+        description: Descrição da oferta especial aplicada ao item.
+        data_tests:
+          - not_null
+
+      - name: offer_type
+        description: Tipo da oferta especial aplicada.
+        data_tests:
+          - not_null
+
+      - name: offer_category
+        description: Categoria da oferta especial aplicada.
+        data_tests:
+          - not_null
+
+      - name: discount_percentage
+        description: Percentual de desconto definido pela oferta, armazenado como proporção.
+        data_tests:
+          - not_null
+
+      - name: order_status
+        description: Código do status do pedido.
+        data_tests:
+          - not_null
+
+      - name: is_online_order
+        description: Indica se o pedido foi realizado pela internet.
+        data_tests:
+          - not_null
+
+      - name: order_quantity
+        description: Quantidade de unidades vendidas no item.
+        data_tests:
+          - not_null
+
+      - name: unit_price
+        description: Preço unitário do produto no momento da venda.
+        data_tests:
+          - not_null
+
+      - name: unit_price_discount
+        description: Percentual de desconto registrado no item da venda.
+        data_tests:
+          - not_null
+
+      - name: gross_amount
+        description: Valor bruto do item antes da aplicação do desconto.
+        data_tests:
+          - not_null
+
+      - name: discount_amount
+        description: Valor monetário do desconto aplicado ao item.
+        data_tests:
+          - not_null
+
+      - name: net_amount
+        description: Valor líquido do item após a aplicação do desconto.
+        data_tests:
+          - not_null
+
+      - name: carrier_tracking_number
+        description: Código de rastreamento da transportadora, quando disponível.
+
+      - name: modified_at
+        description: Data e hora da última alteração do registro na origem.
+        data_tests:
+          - not_null

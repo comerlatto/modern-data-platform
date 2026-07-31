@@ -1,263 +1,221 @@
-\# Modern Data Platform Portfolio
+# Modern Data Platform — Adventure Works
+
+Plataforma analítica desenvolvida como projeto de portfólio para demonstrar, de ponta a ponta, práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
+
+O projeto transforma dados operacionais do Adventure Works em modelos analíticos confiáveis, documentados e preparados para consumo por ferramentas de BI.
+
+## Visão geral
+
+O cenário simula uma empresa que depende diretamente de um banco transacional para produzir relatórios. Essa abordagem gera consultas lentas, métricas inconsistentes e forte dependência da estrutura operacional.
+
+A solução proposta separa processamento operacional e consumo analítico por meio de uma plataforma que contempla:
+
+- ingestão de dados;
+- armazenamento em camada `raw`;
+- transformação com dbt;
+- modelagem dimensional;
+- testes automatizados de dados;
+- documentação e lineage;
+- modelos orientados ao consumo;
+- futura orquestração com Apache Airflow;
+- futura visualização no Power BI.
+
+## Estado atual
+
+A primeira versão da camada analítica de vendas está concluída e validada.
+
+| Entrega | Situação |
+| --- | --- |
+| PostgreSQL e dados do Adventure Works | Concluído |
+| Camadas `staging` e `intermediate` | Concluído |
+| Modelo dimensional de vendas | Concluído |
+| Contratos e testes dbt | Concluído |
+| Catálogo e lineage do dbt | Concluído |
+| Mart de detalhes de vendas | Concluído |
+| Orquestração com Airflow | Próxima etapa |
+| Dashboards no Power BI | Planejado |
+
+O último `dbt build` executou **248 recursos e validações**, sem avisos ou erros:
+
+```text
+PASS=248 WARN=0 ERROR=0 SKIP=0 TOTAL=248
+```
+
+## Arquitetura
+
+```mermaid
+flowchart TD
+    A[Adventure Works OLTP] --> B[Ingestão]
+    B --> C[PostgreSQL RAW]
+    C --> D[dbt Staging]
+    D --> E[dbt Intermediate]
+    E --> F[Modelo dimensional]
+    F --> G[Marts de consumo]
+    G --> H[Power BI]
+    I[dbt Tests e Contracts] -. valida .-> D
+    I -. valida .-> E
+    I -. valida .-> F
+    I -. valida .-> G
+    J[Apache Airflow] -. próxima etapa .-> B
+    J -. próxima etapa .-> D
+```
+
+## Stack tecnológica
+
+| Área | Tecnologia |
+| --- | --- |
+| Banco de dados | PostgreSQL |
+| Transformação | dbt |
+| Linguagens | SQL e Python |
+| Containerização | Docker e Docker Compose |
+| Orquestração | Apache Airflow |
+| Visualização | Power BI |
+| Versionamento | Git e GitHub |
+| Documentação | Markdown, Mermaid e dbt Docs |
+
+## Estrutura do projeto
+
+```text
+modern-data-platform/
+├── airflow/                  # DAGs e configurações de orquestração
+├── database/                 # Scripts e recursos do banco de dados
+├── dbt/
+│   └── adventure_works/
+│       ├── models/
+│       │   ├── staging/      # Padronização das fontes
+│       │   ├── intermediate/ # Regras e combinações reutilizáveis
+│       │   └── analytics/    # Fatos, dimensões e marts
+│       └── tests/            # Testes singulares de negócio
+├── docker/                   # Recursos de containerização
+├── docs/                     # Documentação complementar
+├── powerbi/                  # Artefatos do Power BI
+├── python/                   # Ingestão e simulação de dados
+├── docker-compose.yml
+└── README.md
+```
+
+> A estrutura pode evoluir conforme as próximas etapas forem implementadas.
+
+## Camadas de transformação
+
+### Staging
 
-\> Projeto de portfólio para construção de uma plataforma analítica moderna utilizando boas práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
+A camada `staging` cria uma interface padronizada sobre as tabelas de origem. Nela são realizados ajustes como:
 
-\---
+- renomeação de colunas;
+- conversão de tipos;
+- padronização de valores;
+- inclusão de metadados de carga;
+- testes básicos de qualidade.
 
-\# Visão do Projeto
+Os modelos usam o prefixo `stg_` e são materializados como `view`.
 
-O objetivo NÃO é construir um dashboard.
+### Intermediate
 
-O objetivo é simular a implantação de uma plataforma de dados de uma empresa real.
+A camada `intermediate` concentra transformações reutilizáveis e combinações que não devem ficar diretamente nas dimensões ou fatos.
 
-Este projeto será desenvolvido como se fosse um projeto corporativo, seguindo arquitetura, documentação e padrões utilizados em equipes de dados.
+Os modelos usam o prefixo `int_` e são materializados como `view`.
 
-\---
+### Analytics
 
-\# Objetivos
+A camada `analytics` representa a interface confiável para consumo por ferramentas de BI, aplicações e, futuramente, agentes de IA.
 
-Demonstrar experiência prática em:
+Ela contém:
 
-\- SQL  
-\- PostgreSQL  
-\- Python  
-\- Docker  
-\- Git  
-\- GitHub  
-\- dbt  
-\- Apache Airflow  
-\- Data Warehouse  
-\- Modelagem Dimensional  
-\- Testes de Dados  
-\- Observabilidade  
-\- Power BI
+- dimensões, identificadas por `dim_`;
+- tabelas fato, identificadas por `fact_`;
+- modelos de consumo, identificados por `mart_`.
 
-\---
+## Modelo dimensional de vendas
 
-\# Objetivo Profissional
+O modelo segue o padrão Star Schema. A `fact_sales` possui o grão de **uma linha por item do pedido** e se relaciona com seis dimensões.
 
-Este projeto servirá como principal item do portfólio para vagas de:
+```mermaid
+flowchart TB
+    F[(fact_sales)]
+    D1[dim_date] --> F
+    D2[dim_product] --> F
+    D3[dim_customer] --> F
+    D4[dim_sales_territory] --> F
+    D5[dim_special_offer] --> F
+    D6[dim_sales_person] --> F
+```
 
-\- Data Analyst  
-\- BI Engineer  
-\- Analytics Engineer  
-\- Data Engineer
+### Tabela fato
 
-Toda decisão técnica deve priorizar:
+`fact_sales` concentra os eventos e as métricas de venda, incluindo:
 
-\- simplicidade  
-\- boas práticas  
-\- escalabilidade  
-\- documentação  
-\- reprodutibilidade
+- identificadores do pedido e do item;
+- chaves para as dimensões;
+- datas do pedido, vencimento e envio;
+- quantidade;
+- preço unitário;
+- desconto;
+- valor bruto;
+- valor líquido;
+- status e canal da venda.
 
-\---
+Os identificadores dimensionais permanecem na fato porque garantem relacionamentos confiáveis e evitam duplicação de atributos descritivos.
 
-\# Cenário
+### Dimensões
 
-Uma empresa fictícia chamada \*\*Adventure Works\*\* possui apenas um banco operacional.
+| Modelo | Conteúdo principal |
+| --- | --- |
+| `dim_date` | Calendário e atributos temporais |
+| `dim_product` | Produto, classificação, características e preços de referência |
+| `dim_customer` | Cliente, pessoa, loja e tipo de cliente |
+| `dim_sales_territory` | Território, país ou região e grupo geográfico |
+| `dim_special_offer` | Oferta, categoria, tipo, período e desconto |
+| `dim_sales_person` | Vendedor, cargo, vínculo, meta, bônus e comissão |
 
-Os relatórios são lentos, inconsistentes e dependem diretamente do banco transacional.
+## Mart de consumo
 
-Foi iniciado um projeto de modernização da plataforma analítica.
+O modelo `mart_sales_details` oferece uma interface amigável para exploração e consumo direto.
 
-Nossa missão será construir toda essa plataforma.
+Ele mantém o mesmo grão da `fact_sales` — **uma linha por item do pedido** — e enriquece cada registro com atributos legíveis das dimensões, como:
 
-\---
+- nome e características do produto;
+- nome e tipo do cliente;
+- nome e cargo do vendedor;
+- território comercial;
+- descrição e classificação da oferta especial;
+- métricas financeiras do item vendido.
 
-\# Escopo
+A fato continua sendo a base técnica do modelo estrela. O mart resolve a usabilidade para consumidores que não precisam trabalhar diretamente com chaves dimensionais.
 
-Construiremos:
+Como apenas combina modelos já persistidos, `mart_sales_details` é materializado como `view`.
 
-✔ Banco operacional
+## Convenção de nomenclatura
 
-✔ Camada RAW
+Os nomes dos modelos indicam sua responsabilidade:
 
-✔ Camada STAGING
+| Prefixo | Responsabilidade | Exemplo |
+| --- | --- | --- |
+| `stg_` | Padronização direta de uma fonte | `stg_product` |
+| `int_` | Transformação intermediária reutilizável | `int_sales_order_items` |
+| `dim_` | Atributos descritivos de uma entidade | `dim_product` |
+| `fact_` | Eventos, métricas e chaves dimensionais | `fact_sales` |
+| `mart_` | Modelo preparado para consumo | `mart_sales_details` |
 
-✔ Camada INTERMEDIATE
+Um modelo `mart_` pode ser materializado como `view` quando apenas consulta modelos já persistidos e não precisa armazenar dados próprios.
 
-✔ Data Warehouse
+## Padrões da camada analytics
 
-✔ Testes
+Por padrão, fatos e dimensões da camada `analytics` devem possuir:
 
-✔ Orquestração
+- materialização como `table`;
+- contrato com `contract.enforced: true`;
+- declaração de todas as colunas e seus `data_type` no YAML;
+- descrição do modelo com o grão explícito;
+- descrição de todas as colunas;
+- chaves primárias e estrangeiras declaradas por `constraints`;
+- testes que validem as regras documentadas.
 
-✔ Dashboards
+Marts são uma exceção consciente à materialização padrão e podem usar `view` quando essa escolha evitar persistência desnecessária.
 
-✔ Documentação
+Exemplo da configuração-base:
 
-✔ GitHub
-
-\---
-
-\# Arquitetura
-
-                    AdventureWorks OLTP  
-                             │  
-                      Python Ingestion  
-                             │  
-                    PostgreSQL (RAW)  
-                             │  
-                      dbt \- Staging  
-                             │  
-                   dbt \- Intermediate  
-                             │  
-                 dbt \- Data Warehouse  
-                             │  
-                      dbt Tests  
-                             │  
-                  Apache Airflow  
-                             │  
-                       Power BI
-
-\---
-
-\# Evolução do Projeto
-
-O AdventureWorks é um banco ESTÁTICO.
-
-Para aproximar o projeto de um ambiente corporativo serão implementados simuladores de atualização.
-
-Serão desenvolvidos scripts Python responsáveis por:
-
-\- gerar novos pedidos  
-\- criar novos clientes  
-\- atualizar estoque  
-\- alterar preços  
-\- registrar devoluções  
-\- registrar cancelamentos
-
-Dessa forma o pipeline possuirá cargas incrementais diárias.
-
-\---
-
-\# Fontes de Dados
-
-\#\# Fonte 1
-
-AdventureWorks (ERP)
-
-Tipo:
-
-Banco relacional
-
-\---
-
-\#\# Fonte 2
-
-Arquivo CSV
-
-Exemplo:
-
-Metas comerciais
-
-\---
-
-\#\# Fonte 3
-
-Excel
-
-Exemplo:
-
-Orçamento
-
-\---
-
-\#\# Fonte 4
-
-API
-
-Exemplo:
-
-Cotação de moedas
-
-\---
-
-\#\# Fonte 5
-
-Dados sintéticos
-
-Gerados diariamente por Python.
-
-\---
-
-\# Stack Tecnológica
-
-Banco
-
-\- PostgreSQL
-
-Linguagem
-
-\- Python
-
-Analytics Engineering
-
-\- dbt
-
-Orquestração
-
-\- Apache Airflow
-
-Containerização
-
-\- Docker  
-\- Docker Compose
-
-Versionamento
-
-\- Git  
-\- GitHub
-
-Visualização
-
-\- Power BI
-
-Documentação
-
-\- Markdown  
-\- Mermaid
-
-\---
-
-\# Estrutura do Repositório
-
-\`\`\`  
-project/
-
-airflow/  
-database/  
-docker/  
-python/  
-dbt/  
-powerbi/  
-docs/  
-tests/
-
-README.md  
-docker-compose.yml  
-\`\`\`
-
-\---
-
-\# Padrões da Camada Analytics
-
-A camada \*\*analytics\*\* será a interface confiável para consumo pelo Power BI, por outras aplicações e, futuramente, por agentes de IA.
-
-Todos os modelos dessa camada deverão seguir os seguintes padrões:
-
-\- materialização como `table`  
-\- contrato de dados obrigatório com `contract.enforced: true`  
-\- declaração de todas as colunas e seus respectivos `data_type` no arquivo YAML  
-\- descrição do modelo, incluindo explicitamente o seu grão  
-\- descrição de todas as colunas  
-\- declaração de chaves primárias e estrangeiras por meio de `constraints`  
-\- testes de dados para validar as regras declaradas
-
-A configuração padrão no `dbt_project.yml` será:
-
-\`\`\`yaml
+```yaml
 models:
   adventure_works:
     staging:
@@ -270,17 +228,21 @@ models:
       +materialized: table
       +contract:
         enforced: true
-\`\`\`
+```
 
-O contrato garante que os nomes e os tipos das colunas produzidas pelo SQL correspondam ao que foi declarado no YAML. Entretanto, o dbt não torna o preenchimento de `description` obrigatório apenas com `contract.enforced`; essa exigência deverá ser validada futuramente no processo de CI.
+O contrato garante que as colunas e os tipos produzidos pelo SQL correspondam ao YAML. O preenchimento de `description`, entretanto, não se torna obrigatório apenas com `contract.enforced`; essa regra poderá ser adicionada futuramente ao processo de CI.
 
-\#\# Chaves e relacionamentos
+## Chaves e relacionamentos
 
-As chaves deverão ser documentadas de forma explícita para facilitar a compreensão do modelo dimensional por pessoas, ferramentas de BI e agentes de IA.
+O projeto combina três recursos do dbt:
 
-Para uma chave primária:
+- `ref()` registra dependências e constrói o lineage;
+- `constraints` documenta chaves e obrigatoriedade nos metadados;
+- `unique`, `not_null` e `relationships` validam os dados durante a execução.
 
-\`\`\`yaml
+Exemplo de chave primária:
+
+```yaml
 - name: product_id
   description: Identificador único do produto. Chave primária da dimensão.
   data_type: integer
@@ -290,11 +252,11 @@ Para uma chave primária:
   data_tests:
     - not_null
     - unique
-\`\`\`
+```
 
-Para uma chave estrangeira:
+Exemplo de chave estrangeira:
 
-\`\`\`yaml
+```yaml
 - name: product_id
   description: Identificador do produto vendido. Chave estrangeira para dim_product.
   data_type: integer
@@ -309,270 +271,154 @@ Para uma chave estrangeira:
         arguments:
           to: ref('dim_product')
           field: product_id
-\`\`\`
+```
 
-Uma chave estrangeira somente será declarada quando o modelo referenciado já existir. As `constraints` registram a estrutura e os relacionamentos, enquanto os `data_tests` validam efetivamente a qualidade e a integridade dos dados durante a execução do dbt.
+Uma chave estrangeira só é declarada quando o modelo de destino já existe. Em campos opcionais, como o vendedor de uma venda online, não é aplicado `not_null`; o teste `relationships` valida apenas os valores preenchidos.
 
-O uso conjunto de `ref()`, `constraints` e testes de `relationships` será o padrão do projeto:
+## Qualidade dos dados
 
-\- `ref()` registra a dependência e o lineage no dbt  
-\- `constraints` documentam PKs, FKs e obrigatoriedade nos metadados  
-\- `unique`, `not_null` e `relationships` verificam os dados
+A qualidade é verificada em diferentes níveis:
 
-\---
+- integridade de chaves com `unique`, `not_null` e `relationships`;
+- domínios válidos com `accepted_values`;
+- contratos de nomes e tipos;
+- detecção de duplicidades;
+- coerência de datas, quantidades e descontos;
+- reconciliação de valores financeiros;
+- regras específicas do negócio.
 
-\# Roadmap
+### Padrão dos testes singulares do dbt
 
-\#\# Sprint 1
+Os testes singulares ficam no diretório `tests/` e são consultas SQL que retornam exclusivamente registros inválidos. O teste passa quando a consulta retorna zero linhas.
 
-Infraestrutura
+Cada teste singular deve:
 
-\- Docker  
-\- PostgreSQL  
-\- Git  
-\- GitHub  
-\- AdventureWorks
-
-Status
-
-⬜ Não iniciado
-
-\---
-
-\#\# Sprint 2
-
-Ingestão
-
-\- Python  
-\- RAW  
-\- Logs  
-\- Incremental
-
-Status
-
-⬜ Não iniciado
-
-\---
-
-\#\# Sprint 3
-
-Data Warehouse
-
-\- Star Schema  
-\- Dimensões  
-\- Fatos
-
-Status
-
-⬜ Não iniciado
-
-\---
-
-\#\# Sprint 4
-
-dbt
-
-\- staging  
-\- intermediate  
-\- marts  
-\- documentação  
-\- testes
-
-Status
-
-⬜ Não iniciado
-
-\---
-
-\#\# Sprint 5
-
-Airflow
-
-\- DAG  
-\- Scheduler  
-\- Retry  
-\- Logs  
-\- Alertas
-
-Status
-
-⬜ Não iniciado
-
-\---
-
-\#\# Sprint 6
-
-Power BI
-
-Dashboards:
-
-\- Executivo  
-\- Comercial  
-\- Produtos  
-\- Clientes
-
-Status
-
-⬜ Não iniciado
-
-\---
-
-\# Arquitetura de Dados
-
-(Será desenhada durante o projeto.)
-
-\---
-
-\# Modelo Dimensional
-
-(Será documentado durante o projeto.)
-
-\---
-
-\# Data Dictionary
-
-(Será construído durante o projeto.)
-
-\---
-
-\# Data Lineage
-
-(Será gerado pelo dbt.)
-
-\---
-
-\# Data Quality
-
-Serão implementados testes como:
-
-\- not null  
-\- unique  
-\- accepted values  
-\- relationships  
-\- duplicate detection  
-\- business rules
-
-\#\# Padrão dos testes singulares do dbt
-
-Os testes singulares deverão ser armazenados no diretório `tests/` e escritos
-como consultas que retornam exclusivamente os registros que violam a regra
-validada. O teste passa quando a consulta retorna zero linhas.
-
-Cada arquivo SQL deverá:
-
-\- possuir um comentário inicial que explique quais registros são retornados  
-\- registrar em comentário qualquer regra relacionada que tenha sido
-deliberadamente excluída por ainda não estar confirmada como regra de negócio  
-\- selecionar o identificador do registro e as colunas necessárias para
-investigar a falha  
-\- manter a condição de invalidez explicitamente declarada na cláusula `where`
+- começar com um comentário que explique quais registros são retornados;
+- registrar regras relacionadas deliberadamente excluídas enquanto ainda não forem confirmadas pelo negócio;
+- selecionar o identificador e as colunas necessárias para investigar a falha;
+- declarar explicitamente a condição de invalidez na cláusula `where`;
+- possuir um nome que descreva a regra validada.
 
 Exemplo:
 
-\`\`\`sql
--- Retorna funcionários com datas cronologicamente inválidas.
--- A idade mínima de 18 anos não é validada porque não foi confirmada como regra de negócio.
+```sql
+-- Retorna itens cujo valor líquido difere do valor bruto menos o desconto.
 
 select
-    business_entity_id,
-    birth_date,
-    hire_date
+    sales_order_detail_id,
+    gross_amount,
+    discount_amount,
+    net_amount
+from {{ ref('fact_sales') }}
+where abs(net_amount - (gross_amount - discount_amount)) > 0.01
+```
 
-from {{ ref('stg_employee') }}
+As regras de qualidade e a forma de investigação das falhas também são registradas no catálogo de qualidade do projeto.
 
-where
-    birth_date > current_date
-    or hire_date > current_date
-    or hire_date <= birth_date
-\`\`\`
+## Documentação e lineage
 
-Todos os testes singulares deverão ser documentados em `tests/_tests.yml`, com
-o nome idêntico ao nome do arquivo SQL e uma descrição que explique a regra, a
-unidade ou escala dos valores quando relevante e as condições que provocam a
-falha.
+Os modelos, colunas, testes e relacionamentos estão documentados em arquivos YAML. O catálogo navegável e o grafo de dependências são gerados pelo dbt:
 
-\`\`\`yaml
-version: 2
+```bash
+conda run -n adventure-dbt dbt docs generate
+conda run -n adventure-dbt dbt docs serve
+```
 
-data_tests:
-  - name: assert_salesperson_commission_is_valid
-    description: >
-      Verifica se o percentual de comissão dos vendedores está dentro do
-      intervalo válido entre 0 e 1.
+O lineage permite acompanhar o fluxo desde as fontes operacionais, passando pelas camadas `staging` e `intermediate`, até a `fact_sales`, suas dimensões e o `mart_sales_details`.
 
-      O valor é armazenado como proporção, portanto 0,02 representa uma
-      comissão de 2%. O teste falha quando encontra uma comissão negativa
-      ou superior a 100%.
-\`\`\`
+## Como executar
 
-\---
+Na raiz do projeto dbt:
 
-\# Observabilidade
+```bash
+cd dbt/adventure_works
+```
 
-Pretendemos monitorar:
+Validar a sintaxe e as dependências:
 
-\- tempo de execução  
-\- falhas  
-\- retries  
-\- quantidade de registros  
-\- tabelas carregadas  
-\- testes executados
+```bash
+conda run -n adventure-dbt dbt parse
+```
 
-\---
+Executar todos os modelos e testes na ordem de dependência:
 
-\# ADR (Architecture Decision Records)
+```bash
+conda run -n adventure-dbt dbt build
+```
 
-Todas as decisões arquiteturais deverão ser registradas.
+Consultar uma amostra do mart:
 
-\#\# ADR-001
+```bash
+conda run -n adventure-dbt dbt show --select mart_sales_details --limit 10
+```
 
-Banco escolhido
+Gerar a documentação:
 
-PostgreSQL
+```bash
+conda run -n adventure-dbt dbt docs generate
+conda run -n adventure-dbt dbt docs serve
+```
 
-Motivos
+Para encerrar o servidor local da documentação, pressione `Ctrl + C` no terminal.
 
-\- Open Source  
-\- Compatível com dbt  
-\- Excelente integração com Airflow  
-\- Fácil utilização via Docker
+## Roadmap
 
-\---
+| Etapa | Escopo | Status |
+| --- | --- | --- |
+| 1. Infraestrutura | PostgreSQL, Docker, Git e Adventure Works | Concluído |
+| 2. Base de transformação | Sources, staging e intermediate | Concluído |
+| 3. Data Warehouse | Star Schema, fato e dimensões | Concluído |
+| 4. Qualidade e consumo | Contratos, testes, documentação e mart | Concluído |
+| 5. Orquestração | DAG, scheduler, retries, logs e alertas | Próxima etapa |
+| 6. Business Intelligence | Modelo semântico e dashboards no Power BI | Planejado |
+| 7. Evolução das cargas | Ingestão incremental e simulação de novos eventos | Planejado |
 
-\# Lições Aprendidas
+## Próxima etapa
 
-Será atualizado ao longo do projeto.
+A próxima entrega é orquestrar a execução da plataforma com Apache Airflow. A primeira DAG deverá:
 
-\---
+1. validar a disponibilidade das fontes;
+2. executar a ingestão;
+3. executar o `dbt build`;
+4. registrar duração e status das tarefas;
+5. permitir retries controlados;
+6. preparar alertas para falhas.
 
-\# Backlog
+## Evoluções futuras
 
-Lista de melhorias futuras.
+- dashboards executivo, comercial, de produtos e de clientes;
+- cargas incrementais e snapshots;
+- simulador em Python para novos pedidos e clientes;
+- integração de metas comerciais em CSV;
+- integração de orçamento em Excel;
+- integração de cotação de moedas via API;
+- CI/CD com GitHub Actions;
+- observabilidade de volume, duração e falhas;
+- catálogo de dados;
+- deploy em nuvem;
+- avaliação de CDC, Kafka, MinIO, DuckDB, Snowflake e Terraform.
 
-\---
+## Decisões arquiteturais
 
-\# Ideias Futuras
+### ADR-001 — PostgreSQL como banco da plataforma
 
-\- CDC  
-\- Kafka  
-\- MinIO  
-\- DuckDB  
-\- Snowflake  
-\- Terraform  
-\- CI/CD  
-\- GitHub Actions  
-\- Testes automatizados  
-\- Deploy em nuvem
+O PostgreSQL foi escolhido por ser open source, possuir integração madura com dbt e Airflow e oferecer execução simples em containers.
 
-\---
+### ADR-002 — Separação entre fato e mart de consumo
 
-\# Próxima Sprint
+A `fact_sales` preserva chaves dimensionais e métricas no modelo estrela. O `mart_sales_details` fornece nomes e atributos descritivos para consumo direto, sem desnormalizar ou substituir a fato.
 
-Criar toda a infraestrutura local utilizando Docker Compose contendo:
+### ADR-003 — Contratos na camada analytics
 
-\- PostgreSQL  
-\- pgAdmin  
-\- Airflow  
-\- dbt  
-\- Volume persistente  
-\- Estrutura inicial do GitHub  
+Fatos e dimensões utilizam contratos para garantir compatibilidade entre o SQL produzido e a estrutura declarada no YAML.
+
+## Objetivo profissional
+
+Este projeto foi criado para demonstrar competências relevantes para posições de:
+
+- Data Analyst;
+- BI Engineer;
+- Analytics Engineer;
+- Data Engineer.
+
+As decisões técnicas priorizam simplicidade, qualidade, documentação, reprodutibilidade e clareza para o negócio.
