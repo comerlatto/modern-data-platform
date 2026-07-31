@@ -294,3 +294,61 @@ models:
         description: Tabela de origem do registro.
         data_tests:
           - not_null
+
+
+  - name: stg_salesperson
+    description: Informações comerciais dos vendedores padronizadas a partir da camada raw.
+
+    columns:
+      - name: business_entity_id
+        description: Identificador único do vendedor.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: territory_id
+        description: Identificador do território comercial associado ao vendedor. Pode ser nulo quando não há território atribuído.
+
+      - name: sales_quota
+        description: Meta de vendas atribuída ao vendedor. Pode ser nula quando não há meta definida.
+
+      - name: bonus
+        description: Valor do bônus atribuído ao vendedor.
+        data_tests:
+          - not_null
+
+      - name: commission_pct
+        description: Percentual de comissão aplicado às vendas do vendedor.
+        data_tests:
+          - not_null
+
+      - name: sales_ytd
+        description: Valor acumulado das vendas realizadas pelo vendedor no ano corrente.
+        data_tests:
+          - not_null
+
+      - name: sales_last_year
+        description: Valor acumulado das vendas realizadas pelo vendedor no ano anterior.
+        data_tests:
+          - not_null
+
+      - name: row_guid
+        description: Identificador técnico global proveniente do sistema de origem.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: modified_at
+        description: Data e hora da última alteração do registro no sistema de origem.
+        data_tests:
+          - not_null
+
+      - name: _loaded_at
+        description: Data e hora em que o registro foi carregado na camada raw.
+        data_tests:
+          - not_null
+
+      - name: _source_table
+        description: Nome da tabela de origem do registro.
+        data_tests:
+          - not_null

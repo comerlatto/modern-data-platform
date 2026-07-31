@@ -1,0 +1,42 @@
+version: 2
+
+data_tests:
+  - name: assert_sales_order_subtotals_match
+    description: >
+      Reconcilia os valores financeiros dos pedidos comparando o subtotal
+      registrado no cabeçalho com a soma do valor líquido de seus itens.
+
+      O subtotal calculado corresponde à soma de net_amount por sales_order_id,
+      considerando quantidade, preço unitário e desconto.
+
+      O teste retorna os pedidos cuja diferença entre o subtotal esperado e o
+      calculado seja superior a 0,01. Quando nenhuma linha é retornada, o teste
+      é aprovado.
+
+      Este controle ajuda a identificar cálculos incorretos de desconto, itens
+      perdidos ou duplicados e problemas na associação entre cabeçalhos e itens.
+
+
+
+  - name: assert_salesperson_amounts_are_non_negative
+    description: >
+      Verifica se os valores comerciais associados aos vendedores são
+      maiores ou iguais a zero.
+
+      O teste valida a meta de vendas, o bônus, as vendas acumuladas no ano
+      corrente e as vendas realizadas no ano anterior.
+
+      Registros com sales_quota nulo são permitidos, pois alguns vendedores
+      podem não possuir uma meta definida. O teste falha quando encontra
+      qualquer valor negativo nos campos avaliados.
+
+      
+
+  - name: assert_salesperson_commission_is_valid
+    description: >
+      Verifica se o percentual de comissão dos vendedores está dentro do
+      intervalo válido entre 0 e 1.
+
+      O valor é armazenado como proporção, portanto 0,02 representa uma
+      comissão de 2%. O teste falha quando encontra uma comissão negativa
+      ou superior a 100%.
