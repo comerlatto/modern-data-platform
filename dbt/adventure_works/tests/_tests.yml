@@ -55,7 +55,7 @@ data_tests:
       funcionários não sejam negativos.
 
 
-    - name: assert_fact_sales_quantity_is_positive
+  - name: assert_fact_sales_quantity_is_positive
     description: >
       Verifica se a quantidade vendida em cada item do pedido é maior que zero.
 

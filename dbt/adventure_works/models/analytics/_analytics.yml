@@ -6,12 +6,18 @@ models:
       Dimensão de produtos utilizada nas análises de vendas.
       Grão: uma linha por produto, identificado por product_id.
 
+    config:
+      materialized: table
+      contract:
+        enforced: true
+
     columns:
       - name: product_id
-        description: >
-          Identificador único do produto no sistema de origem.
-          Chave primária da dimensão.
+        description: Identificador único do produto.
         data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
         data_tests:
           - not_null
           - unique
@@ -469,6 +475,343 @@ models:
       - name: is_weekend
         description: Indica se a data corresponde a sábado ou domingo.
         data_type: boolean
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+
+  - name: fact_sales
+    description: >
+      Tabela fato de vendas com uma linha por sales_order_detail_id,
+      representando cada item de um pedido de venda.
+
+    config:
+      materialized: table
+      contract:
+        enforced: true
+
+    columns:
+      - name: sales_order_detail_id
+        description: >
+          Identificador único do item do pedido de venda. Chave primária
+          da tabela fato.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_order_id
+        description: >
+          Identificador do pedido de venda. Atua como dimensão degenerada,
+          permitindo agrupar os diferentes itens de um mesmo pedido.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: product_id
+        description: >
+          Identificador do produto vendido. Chave estrangeira para dim_product.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: foreign_key
+            to: ref('dim_product')
+            to_columns: [product_id]
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_id
+
+      - name: customer_id
+        description: >
+          Identificador do cliente responsável pelo pedido. Chave estrangeira
+          para dim_customer.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: foreign_key
+            to: ref('dim_customer')
+            to_columns: [customer_id]
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_id
+
+      - name: sales_person_id
+        description: >
+          Identificador do vendedor associado ao pedido. Pode ser nulo em
+          vendas realizadas pela internet. Será relacionado a uma dimensão
+          quando dim_sales_person for criada.
+        data_type: integer
+
+      - name: territory_id
+        description: >
+          Identificador do território comercial da venda. Chave estrangeira
+          para dim_sales_territory.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: foreign_key
+            to: ref('dim_sales_territory')
+            to_columns: [territory_id]
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sales_territory')
+                field: territory_id
+
+      - name: special_offer_id
+        description: >
+          Identificador da oferta especial aplicada ao item.
+          Chave estrangeira para dim_special_offer.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: foreign_key
+            to: ref('dim_special_offer')
+            to_columns: [special_offer_id]
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_special_offer')
+                field: special_offer_id
+
+      - name: order_date_id
+        description: >
+          Chave da data de realização do pedido, no formato YYYYMMDD.
+          Chave estrangeira para dim_date.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: foreign_key
+            to: ref('dim_date')
+            to_columns: [date_id]
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_id
+
+      - name: due_date_id
+        description: >
+          Chave da data prevista para conclusão do pedido, no formato
+          YYYYMMDD. Chave estrangeira para dim_date.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: foreign_key
+            to: ref('dim_date')
+            to_columns: [date_id]
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_id
+
+      - name: ship_date_id
+        description: >
+          Chave da data de envio do pedido, no formato YYYYMMDD. Pode ser
+          nula quando o pedido ainda não foi enviado.
+        data_type: integer
+        constraints:
+          - type: foreign_key
+            to: ref('dim_date')
+            to_columns: [date_id]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_id
+
+      - name: order_status
+        description: Código que representa a situação operacional do pedido.
+        data_type: smallint
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: is_online_order
+        description: Indica se o pedido foi realizado pela internet.
+        data_type: boolean
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: order_quantity
+        description: Quantidade do produto vendida no item.
+        data_type: smallint
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: unit_price
+        description: Preço unitário do produto no momento da venda.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: unit_price_discount
+        description: >
+          Percentual de desconto aplicado ao preço unitário, representado
+          como valor decimal entre 0 e 1.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: gross_amount
+        description: >
+          Valor bruto do item antes do desconto, calculado pela multiplicação
+          da quantidade pelo preço unitário.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: discount_amount
+        description: Valor monetário do desconto aplicado ao item.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: net_amount
+        description: >
+          Valor líquido do item após o desconto. Pode apresentar diferença
+          máxima de 0,0001 em relação ao valor bruto menos o desconto devido
+          ao arredondamento das medidas.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: carrier_tracking_number
+        description: >
+          Código de rastreamento atribuído pela transportadora. Pode ser
+          nulo quando o pedido ainda não foi enviado.
+        data_type: varchar(25)
+
+      - name: modified_at
+        description: >
+          Data e hora da alteração mais recente entre o pedido e seu item.
+        data_type: timestamp
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+
+  - name: dim_special_offer
+    description: >
+      Dimensão de ofertas especiais utilizadas nos itens de venda.
+      Grão: uma linha por oferta, identificada por special_offer_id.
+
+    config:
+      materialized: table
+      contract:
+        enforced: true
+
+    columns:
+      - name: special_offer_id
+        description: Identificador único da oferta especial.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: special_offer_description
+        description: Descrição da oferta especial.
+        data_type: varchar(255)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: discount_percentage
+        description: >
+          Percentual de desconto concedido pela oferta, armazenado como
+          proporção entre 0 e 1.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: offer_type
+        description: Tipo da oferta especial.
+        data_type: varchar(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: offer_category
+        description: Categoria à qual a oferta especial pertence.
+        data_type: varchar(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: start_date
+        description: Data e hora de início da validade da oferta.
+        data_type: timestamp
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: end_date
+        description: Data e hora de término da validade da oferta.
+        data_type: timestamp
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: minimum_quantity
+        description: Quantidade mínima necessária para aplicação da oferta.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: maximum_quantity
+        description: >
+          Quantidade máxima permitida para aplicação da oferta. Pode ser nula
+          quando a oferta não possui limite máximo.
+        data_type: integer
+
+      - name: modified_at
+        description: Data e hora da última alteração da oferta na origem.
+        data_type: timestamp
         constraints:
           - type: not_null
         data_tests:
