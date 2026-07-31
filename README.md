@@ -1,10 +1,10 @@
-# Modern Data Platform Portfolio
+\# Modern Data Platform Portfolio
 
-> Projeto de portfólio para construção de uma plataforma analítica moderna utilizando boas práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
+\> Projeto de portfólio para construção de uma plataforma analítica moderna utilizando boas práticas de Engenharia de Dados, Analytics Engineering e Business Intelligence.
 
----
+\---
 
-# Visão do Projeto
+\# Visão do Projeto
 
 O objetivo NÃO é construir um dashboard.
 
@@ -12,50 +12,50 @@ O objetivo é simular a implantação de uma plataforma de dados de uma empresa 
 
 Este projeto será desenvolvido como se fosse um projeto corporativo, seguindo arquitetura, documentação e padrões utilizados em equipes de dados.
 
----
+\---
 
-# Objetivos
+\# Objetivos
 
 Demonstrar experiência prática em:
 
-- SQL
-- PostgreSQL
-- Python
-- Docker
-- Git
-- GitHub
-- dbt
-- Apache Airflow
-- Data Warehouse
-- Modelagem Dimensional
-- Testes de Dados
-- Observabilidade
-- Power BI
+\- SQL  
+\- PostgreSQL  
+\- Python  
+\- Docker  
+\- Git  
+\- GitHub  
+\- dbt  
+\- Apache Airflow  
+\- Data Warehouse  
+\- Modelagem Dimensional  
+\- Testes de Dados  
+\- Observabilidade  
+\- Power BI
 
----
+\---
 
-# Objetivo Profissional
+\# Objetivo Profissional
 
 Este projeto servirá como principal item do portfólio para vagas de:
 
-- Data Analyst
-- BI Engineer
-- Analytics Engineer
-- Data Engineer
+\- Data Analyst  
+\- BI Engineer  
+\- Analytics Engineer  
+\- Data Engineer
 
 Toda decisão técnica deve priorizar:
 
-- simplicidade
-- boas práticas
-- escalabilidade
-- documentação
-- reprodutibilidade
+\- simplicidade  
+\- boas práticas  
+\- escalabilidade  
+\- documentação  
+\- reprodutibilidade
 
----
+\---
 
-# Cenário
+\# Cenário
 
-Uma empresa fictícia chamada **Adventure Works** possui apenas um banco operacional.
+Uma empresa fictícia chamada \*\*Adventure Works\*\* possui apenas um banco operacional.
 
 Os relatórios são lentos, inconsistentes e dependem diretamente do banco transacional.
 
@@ -63,9 +63,9 @@ Foi iniciado um projeto de modernização da plataforma analítica.
 
 Nossa missão será construir toda essa plataforma.
 
----
+\---
 
-# Escopo
+\# Escopo
 
 Construiremos:
 
@@ -89,31 +89,31 @@ Construiremos:
 
 ✔ GitHub
 
----
+\---
 
-# Arquitetura
+\# Arquitetura
 
-                    AdventureWorks OLTP
-                             │
-                      Python Ingestion
-                             │
-                    PostgreSQL (RAW)
-                             │
-                      dbt - Staging
-                             │
-                   dbt - Intermediate
-                             │
-                 dbt - Data Warehouse
-                             │
-                      dbt Tests
-                             │
-                  Apache Airflow
-                             │
+                    AdventureWorks OLTP  
+                             │  
+                      Python Ingestion  
+                             │  
+                    PostgreSQL (RAW)  
+                             │  
+                      dbt \- Staging  
+                             │  
+                   dbt \- Intermediate  
+                             │  
+                 dbt \- Data Warehouse  
+                             │  
+                      dbt Tests  
+                             │  
+                  Apache Airflow  
+                             │  
                        Power BI
 
----
+\---
 
-# Evolução do Projeto
+\# Evolução do Projeto
 
 O AdventureWorks é um banco ESTÁTICO.
 
@@ -121,20 +121,20 @@ Para aproximar o projeto de um ambiente corporativo serão implementados simulad
 
 Serão desenvolvidos scripts Python responsáveis por:
 
-- gerar novos pedidos
-- criar novos clientes
-- atualizar estoque
-- alterar preços
-- registrar devoluções
-- registrar cancelamentos
+\- gerar novos pedidos  
+\- criar novos clientes  
+\- atualizar estoque  
+\- alterar preços  
+\- registrar devoluções  
+\- registrar cancelamentos
 
 Dessa forma o pipeline possuirá cargas incrementais diárias.
 
----
+\---
 
-# Fontes de Dados
+\# Fontes de Dados
 
-## Fonte 1
+\#\# Fonte 1
 
 AdventureWorks (ERP)
 
@@ -142,9 +142,9 @@ Tipo:
 
 Banco relacional
 
----
+\---
 
-## Fonte 2
+\#\# Fonte 2
 
 Arquivo CSV
 
@@ -152,9 +152,9 @@ Exemplo:
 
 Metas comerciais
 
----
+\---
 
-## Fonte 3
+\#\# Fonte 3
 
 Excel
 
@@ -162,9 +162,9 @@ Exemplo:
 
 Orçamento
 
----
+\---
 
-## Fonte 4
+\#\# Fonte 4
 
 API
 
@@ -172,92 +172,92 @@ Exemplo:
 
 Cotação de moedas
 
----
+\---
 
-## Fonte 5
+\#\# Fonte 5
 
 Dados sintéticos
 
 Gerados diariamente por Python.
 
----
+\---
 
-# Stack Tecnológica
+\# Stack Tecnológica
 
 Banco
 
-- PostgreSQL
+\- PostgreSQL
 
 Linguagem
 
-- Python
+\- Python
 
 Analytics Engineering
 
-- dbt
+\- dbt
 
 Orquestração
 
-- Apache Airflow
+\- Apache Airflow
 
 Containerização
 
-- Docker
-- Docker Compose
+\- Docker  
+\- Docker Compose
 
 Versionamento
 
-- Git
-- GitHub
+\- Git  
+\- GitHub
 
 Visualização
 
-- Power BI
+\- Power BI
 
 Documentação
 
-- Markdown
-- Mermaid
+\- Markdown  
+\- Mermaid
 
----
+\---
 
-# Estrutura do Repositório
+\# Estrutura do Repositório
 
-```
+\`\`\`  
 project/
 
-airflow/
-database/
-docker/
-python/
-dbt/
-powerbi/
-docs/
+airflow/  
+database/  
+docker/  
+python/  
+dbt/  
+powerbi/  
+docs/  
 tests/
 
-README.md
-docker-compose.yml
-```
+README.md  
+docker-compose.yml  
+\`\`\`
 
----
+\---
 
-# Padrões da Camada Analytics
+\# Padrões da Camada Analytics
 
-A camada **analytics** será a interface confiável para consumo pelo Power BI, por outras aplicações e, futuramente, por agentes de IA.
+A camada \*\*analytics\*\* será a interface confiável para consumo pelo Power BI, por outras aplicações e, futuramente, por agentes de IA.
 
 Todos os modelos dessa camada deverão seguir os seguintes padrões:
 
-- materialização como `table`
-- contrato de dados obrigatório com `contract.enforced: true`
-- declaração de todas as colunas e seus respectivos `data_type` no arquivo YAML
-- descrição do modelo, incluindo explicitamente o seu grão
-- descrição de todas as colunas
-- declaração de chaves primárias e estrangeiras por meio de `constraints`
-- testes de dados para validar as regras declaradas
+\- materialização como `table`  
+\- contrato de dados obrigatório com `contract.enforced: true`  
+\- declaração de todas as colunas e seus respectivos `data_type` no arquivo YAML  
+\- descrição do modelo, incluindo explicitamente o seu grão  
+\- descrição de todas as colunas  
+\- declaração de chaves primárias e estrangeiras por meio de `constraints`  
+\- testes de dados para validar as regras declaradas
 
 A configuração padrão no `dbt_project.yml` será:
 
-```yaml
+\`\`\`yaml
 models:
   adventure_works:
     staging:
@@ -270,17 +270,17 @@ models:
       +materialized: table
       +contract:
         enforced: true
-```
+\`\`\`
 
 O contrato garante que os nomes e os tipos das colunas produzidas pelo SQL correspondam ao que foi declarado no YAML. Entretanto, o dbt não torna o preenchimento de `description` obrigatório apenas com `contract.enforced`; essa exigência deverá ser validada futuramente no processo de CI.
 
-## Chaves e relacionamentos
+\#\# Chaves e relacionamentos
 
 As chaves deverão ser documentadas de forma explícita para facilitar a compreensão do modelo dimensional por pessoas, ferramentas de BI e agentes de IA.
 
 Para uma chave primária:
 
-```yaml
+\`\`\`yaml
 - name: product_id
   description: Identificador único do produto. Chave primária da dimensão.
   data_type: integer
@@ -290,11 +290,11 @@ Para uma chave primária:
   data_tests:
     - not_null
     - unique
-```
+\`\`\`
 
 Para uma chave estrangeira:
 
-```yaml
+\`\`\`yaml
 - name: product_id
   description: Identificador do produto vendido. Chave estrangeira para dim_product.
   data_type: integer
@@ -309,179 +309,222 @@ Para uma chave estrangeira:
         arguments:
           to: ref('dim_product')
           field: product_id
-```
+\`\`\`
 
 Uma chave estrangeira somente será declarada quando o modelo referenciado já existir. As `constraints` registram a estrutura e os relacionamentos, enquanto os `data_tests` validam efetivamente a qualidade e a integridade dos dados durante a execução do dbt.
 
 O uso conjunto de `ref()`, `constraints` e testes de `relationships` será o padrão do projeto:
 
-- `ref()` registra a dependência e o lineage no dbt
-- `constraints` documentam PKs, FKs e obrigatoriedade nos metadados
-- `unique`, `not_null` e `relationships` verificam os dados
+\- `ref()` registra a dependência e o lineage no dbt  
+\- `constraints` documentam PKs, FKs e obrigatoriedade nos metadados  
+\- `unique`, `not_null` e `relationships` verificam os dados
 
----
+\---
 
-# Roadmap
+\# Roadmap
 
-## Sprint 1
+\#\# Sprint 1
 
 Infraestrutura
 
-- Docker
-- PostgreSQL
-- Git
-- GitHub
-- AdventureWorks
+\- Docker  
+\- PostgreSQL  
+\- Git  
+\- GitHub  
+\- AdventureWorks
 
 Status
 
 ⬜ Não iniciado
 
----
+\---
 
-## Sprint 2
+\#\# Sprint 2
 
 Ingestão
 
-- Python
-- RAW
-- Logs
-- Incremental
+\- Python  
+\- RAW  
+\- Logs  
+\- Incremental
 
 Status
 
 ⬜ Não iniciado
 
----
+\---
 
-## Sprint 3
+\#\# Sprint 3
 
 Data Warehouse
 
-- Star Schema
-- Dimensões
-- Fatos
+\- Star Schema  
+\- Dimensões  
+\- Fatos
 
 Status
 
 ⬜ Não iniciado
 
----
+\---
 
-## Sprint 4
+\#\# Sprint 4
 
 dbt
 
-- staging
-- intermediate
-- marts
-- documentação
-- testes
+\- staging  
+\- intermediate  
+\- marts  
+\- documentação  
+\- testes
 
 Status
 
 ⬜ Não iniciado
 
----
+\---
 
-## Sprint 5
+\#\# Sprint 5
 
 Airflow
 
-- DAG
-- Scheduler
-- Retry
-- Logs
-- Alertas
+\- DAG  
+\- Scheduler  
+\- Retry  
+\- Logs  
+\- Alertas
 
 Status
 
 ⬜ Não iniciado
 
----
+\---
 
-## Sprint 6
+\#\# Sprint 6
 
 Power BI
 
 Dashboards:
 
-- Executivo
-- Comercial
-- Produtos
-- Clientes
+\- Executivo  
+\- Comercial  
+\- Produtos  
+\- Clientes
 
 Status
 
 ⬜ Não iniciado
 
----
+\---
 
-# Arquitetura de Dados
+\# Arquitetura de Dados
 
 (Será desenhada durante o projeto.)
 
----
+\---
 
-# Modelo Dimensional
+\# Modelo Dimensional
 
 (Será documentado durante o projeto.)
 
----
+\---
 
-# Data Dictionary
+\# Data Dictionary
 
 (Será construído durante o projeto.)
 
----
+\---
 
-# Data Lineage
+\# Data Lineage
 
 (Será gerado pelo dbt.)
 
----
+\---
 
-# Data Quality
+\# Data Quality
 
-A qualidade dos dados é validada pelo dbt em dois níveis:
+Serão implementados testes como:
 
-- testes genéricos, declarados nos arquivos YAML;
-- testes singulares, escritos em SQL para regras que envolvem múltiplas colunas.
+\- not null  
+\- unique  
+\- accepted values  
+\- relationships  
+\- duplicate detection  
+\- business rules
 
-Os testes genéricos verificam aspectos como:
+\#\# Padrão dos testes singulares do dbt
 
-- preenchimento obrigatório (`not_null`);
-- unicidade (`unique`);
-- valores permitidos (`accepted_values`);
-- integridade entre modelos (`relationships`).
+Os testes singulares deverão ser armazenados no diretório `tests/` e escritos
+como consultas que retornam exclusivamente os registros que violam a regra
+validada. O teste passa quando a consulta retorna zero linhas.
 
-Os testes singulares validam regras específicas do negócio. Cada consulta
-deve retornar somente os registros inválidos; portanto, o teste passa quando
-retorna zero linhas.
+Cada arquivo SQL deverá:
 
-O catálogo detalhado está disponível em
-[`docs/data-quality.md`](docs/data-quality.md).
+\- possuir um comentário inicial que explique quais registros são retornados  
+\- registrar em comentário qualquer regra relacionada que tenha sido
+deliberadamente excluída por ainda não estar confirmada como regra de negócio  
+\- selecionar o identificador do registro e as colunas necessárias para
+investigar a falha  
+\- manter a condição de invalidez explicitamente declarada na cláusula `where`
 
----
+Exemplo:
 
-# Observabilidade
+\`\`\`sql
+-- Retorna funcionários com datas cronologicamente inválidas.
+-- A idade mínima de 18 anos não é validada porque não foi confirmada como regra de negócio.
+
+select
+    business_entity_id,
+    birth_date,
+    hire_date
+
+from {{ ref('stg_employee') }}
+
+where
+    birth_date > current_date
+    or hire_date > current_date
+    or hire_date <= birth_date
+\`\`\`
+
+Todos os testes singulares deverão ser documentados em `tests/_tests.yml`, com
+o nome idêntico ao nome do arquivo SQL e uma descrição que explique a regra, a
+unidade ou escala dos valores quando relevante e as condições que provocam a
+falha.
+
+\`\`\`yaml
+version: 2
+
+data_tests:
+  - name: assert_salesperson_commission_is_valid
+    description: >
+      Verifica se o percentual de comissão dos vendedores está dentro do
+      intervalo válido entre 0 e 1.
+
+      O valor é armazenado como proporção, portanto 0,02 representa uma
+      comissão de 2%. O teste falha quando encontra uma comissão negativa
+      ou superior a 100%.
+\`\`\`
+
+\---
+
+\# Observabilidade
 
 Pretendemos monitorar:
 
-- tempo de execução
-- falhas
-- retries
-- quantidade de registros
-- tabelas carregadas
-- testes executados
+\- tempo de execução  
+\- falhas  
+\- retries  
+\- quantidade de registros  
+\- tabelas carregadas  
+\- testes executados
 
----
+\---
 
-# ADR (Architecture Decision Records)
+\# ADR (Architecture Decision Records)
 
 Todas as decisões arquiteturais deverão ser registradas.
 
-## ADR-001
+\#\# ADR-001
 
 Banco escolhido
 
@@ -489,47 +532,47 @@ PostgreSQL
 
 Motivos
 
-- Open Source
-- Compatível com dbt
-- Excelente integração com Airflow
-- Fácil utilização via Docker
+\- Open Source  
+\- Compatível com dbt  
+\- Excelente integração com Airflow  
+\- Fácil utilização via Docker
 
----
+\---
 
-# Lições Aprendidas
+\# Lições Aprendidas
 
 Será atualizado ao longo do projeto.
 
----
+\---
 
-# Backlog
+\# Backlog
 
 Lista de melhorias futuras.
 
----
+\---
 
-# Ideias Futuras
+\# Ideias Futuras
 
-- CDC
-- Kafka
-- MinIO
-- DuckDB
-- Snowflake
-- Terraform
-- CI/CD
-- GitHub Actions
-- Testes automatizados
-- Deploy em nuvem
+\- CDC  
+\- Kafka  
+\- MinIO  
+\- DuckDB  
+\- Snowflake  
+\- Terraform  
+\- CI/CD  
+\- GitHub Actions  
+\- Testes automatizados  
+\- Deploy em nuvem
 
----
+\---
 
-# Próxima Sprint
+\# Próxima Sprint
 
 Criar toda a infraestrutura local utilizando Docker Compose contendo:
 
-- PostgreSQL
-- pgAdmin
-- Airflow
-- dbt
-- Volume persistente
-- Estrutura inicial do GitHub
+\- PostgreSQL  
+\- pgAdmin  
+\- Airflow  
+\- dbt  
+\- Volume persistente  
+\- Estrutura inicial do GitHub  

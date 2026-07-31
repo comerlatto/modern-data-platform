@@ -53,3 +53,25 @@ data_tests:
     description: >
       Valida que os saldos de horas de férias e de licença médica dos
       funcionários não sejam negativos.
+
+
+    - name: assert_fact_sales_quantity_is_positive
+    description: >
+      Verifica se a quantidade vendida em cada item do pedido é maior que zero.
+
+      O teste falha quando encontra uma quantidade igual ou inferior a zero.
+
+  - name: assert_fact_sales_unit_price_is_positive
+    description: >
+      Verifica se o preço unitário de cada item vendido é maior que zero.
+
+      O teste falha quando encontra um preço unitário igual ou inferior a zero.
+
+  - name: assert_fact_sales_net_amount_is_valid
+    description: >
+      Verifica se o valor líquido do item corresponde ao valor bruto menos o
+      valor do desconto.
+
+      É aceita uma diferença máxima de 0,0001 devido ao arredondamento
+      individual das medidas. O teste falha quando encontra uma divergência
+      superior a essa tolerância.
