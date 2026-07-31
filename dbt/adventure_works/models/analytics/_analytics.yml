@@ -549,10 +549,17 @@ models:
 
       - name: sales_person_id
         description: >
-          Identificador do vendedor associado ao pedido. Pode ser nulo em
-          vendas realizadas pela internet. Será relacionado a uma dimensão
-          quando dim_sales_person for criada.
+          Identificador do vendedor associado ao pedido. Pode ser nulo em vendas realizadas pela internet. Chave estrangeira para dim_sales_person.
         data_type: integer
+        constraints:
+          - type: foreign_key
+            to: ref('dim_sales_person')
+            to_columns: [sales_person_id]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sales_person')
+                field: sales_person_id
 
       - name: territory_id
         description: >
@@ -811,6 +818,135 @@ models:
 
       - name: modified_at
         description: Data e hora da última alteração da oferta na origem.
+        data_type: timestamp
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+
+
+  - name: dim_sales_person
+    description: >
+      Dimensão de vendedores, reunindo informações pessoais, profissionais
+      e comerciais. Grão: uma linha por vendedor, identificado por
+      sales_person_id.
+
+    config:
+      materialized: table
+      contract:
+        enforced: true
+
+    columns:
+      - name: sales_person_id
+        description: Identificador único do vendedor.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: territory_id
+        description: >
+          Identificador do território atualmente associado ao vendedor.
+          Pode ser nulo quando o vendedor não possui território definido.
+        data_type: integer
+        constraints:
+          - type: foreign_key
+            to: ref('dim_sales_territory')
+            to_columns: [territory_id]
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sales_territory')
+                field: territory_id
+
+      - name: first_name
+        description: Primeiro nome do vendedor.
+        data_type: varchar(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: middle_name
+        description: Nome do meio do vendedor, quando informado.
+        data_type: varchar(50)
+
+      - name: last_name
+        description: Sobrenome do vendedor.
+        data_type: varchar(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: full_name
+        description: Nome completo do vendedor.
+        data_type: varchar(152)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: job_title
+        description: Cargo profissional atual do vendedor.
+        data_type: varchar(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: hire_date
+        description: Data de contratação do vendedor.
+        data_type: date
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: is_salaried
+        description: Indica se o vendedor recebe remuneração salarial.
+        data_type: boolean
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: is_current
+        description: Indica se o vínculo profissional está ativo.
+        data_type: boolean
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: sales_quota
+        description: Meta comercial atribuída ao vendedor, quando definida.
+        data_type: numeric(19, 4)
+
+      - name: bonus
+        description: Valor de bônus atribuído ao vendedor.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: commission_pct
+        description: Percentual de comissão do vendedor, armazenado como proporção.
+        data_type: numeric(10, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: modified_at
+        description: >
+          Data e hora da alteração mais recente entre os registros de vendedor,
+          funcionário e pessoa na origem.
         data_type: timestamp
         constraints:
           - type: not_null
