@@ -18,7 +18,7 @@ dbt/dbt_packages/
 .idea/
 .vscode/
 
-# Airflow
+# Airflow: ignora logs, mas preserva a pasta no Git
 !airflow/logs/
 airflow/logs/*
 !airflow/logs/.gitkeep
