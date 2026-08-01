@@ -25,7 +25,7 @@ SOURCE_TABLES = [
 
 def create_connection(prefix: str) -> psycopg.Connection:
     return psycopg.connect(
-        host="localhost",
+        host=os.getenv(f"{prefix}_DB_HOST", "localhost"),
         dbname=os.environ[f"{prefix}_DB_NAME"],
         user=os.environ[f"{prefix}_DB_USER"],
         password=os.environ[f"{prefix}_DB_PASSWORD"],
