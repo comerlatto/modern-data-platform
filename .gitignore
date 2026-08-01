@@ -18,6 +18,9 @@ dbt/dbt_packages/
 .idea/
 .vscode/
 
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
 # Airflow: ignora logs, mas preserva a pasta no Git
 !airflow/logs/
 airflow/logs/*
