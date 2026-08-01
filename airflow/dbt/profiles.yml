@@ -1,0 +1,13 @@
+adventure_works:
+  target: dev
+
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_DB_HOST', 'warehouse') }}"
+      port: "{{ env_var('WAREHOUSE_DB_PORT', '5432') | int }}"
+      dbname: "{{ env_var('WAREHOUSE_DB_NAME', 'analytics') }}"
+      schema: analytics
+      user: "{{ env_var('WAREHOUSE_DB_USER', 'analytics_user') }}"
+      pass: "{{ env_var('WAREHOUSE_DB_PASSWORD', 'analytics_dev') }}"
+      threads: 1

@@ -17,3 +17,8 @@ dbt/dbt_packages/
 .DS_Store
 .idea/
 .vscode/
+
+# Airflow
+!airflow/logs/
+airflow/logs/*
+!airflow/logs/.gitkeep

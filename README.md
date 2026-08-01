@@ -45,19 +45,16 @@ PASS=248 WARN=0 ERROR=0 SKIP=0 TOTAL=248
 
 ```mermaid
 flowchart TD
-    A[Adventure Works OLTP] --> B[Ingestão]
+    A[AdventureWorks OLTP] --> B[Ingestão Python]
     B --> C[PostgreSQL RAW]
     C --> D[dbt Staging]
     D --> E[dbt Intermediate]
-    E --> F[Modelo dimensional]
-    F --> G[Marts de consumo]
+    E --> F[dbt Analytics]
+    F --> G[Testes e contratos]
     G --> H[Power BI]
-    I[dbt Tests e Contracts] -. valida .-> D
-    I -. valida .-> E
-    I -. valida .-> F
-    I -. valida .-> G
-    J[Apache Airflow] -. próxima etapa .-> B
-    J -. próxima etapa .-> D
+
+    I[Apache Airflow] -. orquestra .-> B
+    I -. orquestra .-> D
 ```
 
 ## Stack tecnológica
@@ -72,6 +69,70 @@ flowchart TD
 | Visualização | Power BI |
 | Versionamento | Git e GitHub |
 | Documentação | Markdown, Mermaid e dbt Docs |
+
+# Orquestração com Apache Airflow
+
+O Apache Airflow coordena a execução do pipeline por meio da DAG `adventureworks_pipeline`.
+
+O fluxo possui duas tarefas:
+
+```mermaid
+flowchart LR
+    A[ingest_raw] --> B[dbt_build]
+```
+
+- `ingest_raw`: executa o script Python responsável pela carga da camada RAW;
+- `dbt_build`: constrói os modelos dbt e executa os testes de qualidade;
+- a segunda tarefa somente começa quando a ingestão termina com sucesso;
+- novas tentativas são executadas automaticamente em caso de falha.
+
+Inicialmente, a DAG utiliza execução manual (`schedule=None`) para facilitar a validação do pipeline.
+
+## Componentes do Airflow
+
+A infraestrutura utiliza:
+
+- API Server e interface web;
+- Scheduler;
+- DAG Processor;
+- LocalExecutor;
+- PostgreSQL exclusivo para metadados;
+- Docker Compose para execução local.
+
+## Executando o pipeline
+
+Construa as imagens:
+
+```bash
+docker compose build
+```
+
+Inicialize o banco de metadados e o usuário administrador:
+
+```bash
+docker compose up airflow-init
+```
+
+Suba os serviços:
+
+```bash
+docker compose up -d
+```
+
+A interface estará disponível em:
+
+```text
+http://localhost:8080
+```
+
+Credenciais locais de desenvolvimento:
+
+```text
+Usuário: airflow
+Senha: airflow
+```
+
+Na interface, ative e execute a DAG `adventureworks_pipeline`.
 
 ## Estrutura do projeto
 
