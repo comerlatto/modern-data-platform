@@ -1,0 +1,100 @@
+table 'analytics dim_special_offer'
+	lineageTag: 00d3ef57-b22d-49a6-b5e0-aebfee9fe2c8
+
+	column special_offer_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 54fa1ebf-9a27-4da9-ad9d-340078061d19
+		summarizeBy: none
+		sourceColumn: special_offer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column special_offer_description
+		dataType: string
+		lineageTag: c0fac7f8-4d59-40d3-a8da-d8698e43eb89
+		summarizeBy: none
+		sourceColumn: special_offer_description
+
+		annotation SummarizationSetBy = Automatic
+
+	column discount_percentage
+		dataType: double
+		lineageTag: 2c241310-3bca-45ab-b2eb-e5c9de118efb
+		summarizeBy: sum
+		sourceColumn: discount_percentage
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column offer_type
+		dataType: string
+		lineageTag: 6f4b68e5-79fc-4ad7-9fb6-066ddc24e7a2
+		summarizeBy: none
+		sourceColumn: offer_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column offer_category
+		dataType: string
+		lineageTag: 46ffccb5-a4a9-4988-a371-45238fb1b3f3
+		summarizeBy: none
+		sourceColumn: offer_category
+
+		annotation SummarizationSetBy = Automatic
+
+	column start_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 6625287c-9dca-4fe1-8b58-5b27fd9910ee
+		summarizeBy: none
+		sourceColumn: start_date
+
+		annotation SummarizationSetBy = Automatic
+
+	column end_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d27d456b-086a-447a-b1ca-f7c68e6ab815
+		summarizeBy: none
+		sourceColumn: end_date
+
+		annotation SummarizationSetBy = Automatic
+
+	column minimum_quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: 1cbf3d33-00d8-4ff4-8c78-19c074fb082d
+		summarizeBy: sum
+		sourceColumn: minimum_quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column maximum_quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: fa6f8635-6480-4dc0-92f4-e62a5ebab099
+		summarizeBy: sum
+		sourceColumn: maximum_quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column modified_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 7763c0e6-0163-459a-8b72-9d2eb6dd1118
+		summarizeBy: none
+		sourceColumn: modified_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'analytics dim_special_offer' = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database("localhost:5434", "analytics"),
+				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_special_offer"]}[Data]
+				in
+				  #"Navigation 1"
+

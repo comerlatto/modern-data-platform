@@ -1,0 +1,213 @@
+table 'analytics dim_product'
+	lineageTag: 71373e04-3c25-4e27-b05e-70de9cdfabc1
+
+	column product_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 78dc304e-f307-4298-82a1-8f3cda356a5c
+		summarizeBy: none
+		sourceColumn: product_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_name
+		dataType: string
+		lineageTag: 447d0690-f1a0-4071-89e0-f198b12cb15f
+		summarizeBy: none
+		sourceColumn: product_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_number
+		dataType: string
+		lineageTag: 668c254f-c616-40a8-b296-06a049f65443
+		summarizeBy: none
+		sourceColumn: product_number
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_manufactured
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a77b0ce8-a2e0-4cc2-a8d0-3858c17d1248
+		summarizeBy: none
+		sourceColumn: is_manufactured
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_finished_good
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: cef39bcf-6ed4-4acc-acd6-c92608c1086b
+		summarizeBy: none
+		sourceColumn: is_finished_good
+
+		annotation SummarizationSetBy = Automatic
+
+	column color
+		dataType: string
+		lineageTag: 1a10e642-2698-49c7-8fd6-6f25d6c64d4d
+		summarizeBy: none
+		sourceColumn: color
+
+		annotation SummarizationSetBy = Automatic
+
+	column size
+		dataType: string
+		lineageTag: 5ef690c8-0255-4e6a-b9e0-cfb975531a2b
+		summarizeBy: none
+		sourceColumn: size
+
+		annotation SummarizationSetBy = Automatic
+
+	column size_unit_measure_code
+		dataType: string
+		lineageTag: 27fc631a-9fb3-403b-bc8a-c2b2a59f82f9
+		summarizeBy: none
+		sourceColumn: size_unit_measure_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column weight
+		dataType: double
+		lineageTag: 5bf1e2fa-506f-48fc-a825-e730ee8af66e
+		summarizeBy: sum
+		sourceColumn: weight
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column weight_unit_measure_code
+		dataType: string
+		lineageTag: ab1244ee-3abd-4da0-bca1-8201a3a1e1a7
+		summarizeBy: none
+		sourceColumn: weight_unit_measure_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_line
+		dataType: string
+		lineageTag: bc357413-03df-44ef-bfe0-ff1056f6c8f1
+		summarizeBy: none
+		sourceColumn: product_line
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_class
+		dataType: string
+		lineageTag: a3bd1a23-6a43-456f-9f19-ebe993fecd0b
+		summarizeBy: none
+		sourceColumn: product_class
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_style
+		dataType: string
+		lineageTag: 333ab491-8ad9-4985-9bf1-1ebf9b8d41a2
+		summarizeBy: none
+		sourceColumn: product_style
+
+		annotation SummarizationSetBy = Automatic
+
+	column safety_stock_level
+		dataType: int64
+		formatString: 0
+		lineageTag: bf56735d-40b7-4c2c-bbee-67dc81f21bf6
+		summarizeBy: sum
+		sourceColumn: safety_stock_level
+
+		annotation SummarizationSetBy = Automatic
+
+	column reorder_point
+		dataType: int64
+		formatString: 0
+		lineageTag: 91f07407-490a-4d3f-bdc0-a527813ae273
+		summarizeBy: sum
+		sourceColumn: reorder_point
+
+		annotation SummarizationSetBy = Automatic
+
+	column days_to_manufacture
+		dataType: int64
+		formatString: 0
+		lineageTag: b5b7180b-a8f0-463c-b146-65dd6549a33d
+		summarizeBy: sum
+		sourceColumn: days_to_manufacture
+
+		annotation SummarizationSetBy = Automatic
+
+	column standard_cost
+		dataType: double
+		lineageTag: ccb402ed-7e88-4454-a3f6-2d5a5ea7fb65
+		summarizeBy: sum
+		sourceColumn: standard_cost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column list_price
+		dataType: double
+		lineageTag: b43a90bc-62b4-488e-b925-bb9304b3d838
+		summarizeBy: sum
+		sourceColumn: list_price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column product_subcategory_id
+		dataType: int64
+		formatString: 0
+		lineageTag: d8185a01-effd-45dd-a246-97d2332c9684
+		summarizeBy: sum
+		sourceColumn: product_subcategory_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_model_id
+		dataType: int64
+		formatString: 0
+		lineageTag: eda6b1a4-1769-4c50-914e-062ab6ed3564
+		summarizeBy: sum
+		sourceColumn: product_model_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column sell_start_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 956e53a1-d6b5-4416-970e-a974ca4e036f
+		summarizeBy: none
+		sourceColumn: sell_start_date
+
+		annotation SummarizationSetBy = Automatic
+
+	column sell_end_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 1a3450c3-49fb-444b-b599-508f0bf661cf
+		summarizeBy: none
+		sourceColumn: sell_end_date
+
+		annotation SummarizationSetBy = Automatic
+
+	column discontinued_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: e1c3d564-f9d5-4504-9c38-028b85d744b0
+		summarizeBy: none
+		sourceColumn: discontinued_date
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'analytics dim_product' = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database("localhost:5434", "analytics"),
+				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_product"]}[Data]
+				in
+				  #"Navigation 1"
+

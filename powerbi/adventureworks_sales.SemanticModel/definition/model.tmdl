@@ -1,6 +1,24 @@
 model Model
 	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: pt-BR
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
 
 annotation PBI_ProTooling = ["DevMode"]
+
+annotation PBI_QueryOrder = ["analytics dim_customer","analytics dim_date","analytics dim_product","analytics dim_sales_person","analytics dim_sales_territory","analytics dim_special_offer","analytics fact_sales","_measures"]
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+ref table 'analytics dim_customer'
+ref table 'analytics dim_date'
+ref table 'analytics dim_product'
+ref table 'analytics dim_sales_person'
+ref table 'analytics dim_sales_territory'
+ref table 'analytics dim_special_offer'
+ref table 'analytics fact_sales'
+ref table _measures
 
 ref cultureInfo en-US

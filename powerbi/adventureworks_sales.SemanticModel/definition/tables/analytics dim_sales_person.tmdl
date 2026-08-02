@@ -1,0 +1,138 @@
+table 'analytics dim_sales_person'
+	lineageTag: c9425860-2b89-4745-9442-16b51671dd3b
+
+	column sales_person_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 55dfb65d-017a-4a22-a2e0-fb871b3d213e
+		summarizeBy: none
+		sourceColumn: sales_person_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column territory_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 65349c88-46e8-4012-ba5a-183bad0aea7f
+		summarizeBy: none
+		sourceColumn: territory_id
+
+		annotation SummarizationSetBy = User
+
+	column first_name
+		dataType: string
+		lineageTag: b4bd7815-d7e0-406d-b1aa-35ea998196d2
+		summarizeBy: none
+		sourceColumn: first_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column middle_name
+		dataType: string
+		lineageTag: 3c0553ed-2485-458d-b510-1bdf2a5745fb
+		summarizeBy: none
+		sourceColumn: middle_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column last_name
+		dataType: string
+		lineageTag: 976c8885-8483-489a-90cb-775d264c866b
+		summarizeBy: none
+		sourceColumn: last_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column full_name
+		dataType: string
+		lineageTag: 7f25f218-4d8b-46a9-a85e-04ad53b1ce5a
+		summarizeBy: none
+		sourceColumn: full_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column job_title
+		dataType: string
+		lineageTag: b91227b4-270b-44f4-a752-ca050ca8c1a1
+		summarizeBy: none
+		sourceColumn: job_title
+
+		annotation SummarizationSetBy = Automatic
+
+	column hire_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 593c4ea4-e12a-427a-ae4f-320a9dd6990a
+		summarizeBy: none
+		sourceColumn: hire_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column is_salaried
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 41c49b84-ab1f-4bc9-b66a-8e587b6ca56f
+		summarizeBy: none
+		sourceColumn: is_salaried
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_current
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 2e9f7688-f5e5-42b9-8075-c9cdf395f093
+		summarizeBy: none
+		sourceColumn: is_current
+
+		annotation SummarizationSetBy = Automatic
+
+	column sales_quota
+		dataType: double
+		lineageTag: 07b8016a-c1ae-464e-b482-f35932c2ee82
+		summarizeBy: sum
+		sourceColumn: sales_quota
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column bonus
+		dataType: double
+		lineageTag: d130f5e4-8ade-4621-8204-606fa7635e89
+		summarizeBy: sum
+		sourceColumn: bonus
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column commission_pct
+		dataType: double
+		lineageTag: cba6c1b2-eaaf-402f-9872-76d2bafe580d
+		summarizeBy: sum
+		sourceColumn: commission_pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column modified_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 2de5faa8-eb4f-4549-b176-37ab3d33cc3f
+		summarizeBy: none
+		sourceColumn: modified_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'analytics dim_sales_person' = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database("localhost:5434", "analytics"),
+				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_sales_person"]}[Data]
+				in
+				  #"Navigation 1"
+

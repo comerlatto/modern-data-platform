@@ -1,0 +1,106 @@
+table 'analytics dim_customer'
+	lineageTag: f4e5a6e7-0e79-4fcb-b968-6d5f7efda7e6
+
+	column customer_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 77e3e844-ecaf-4aeb-b551-94f1b98ea56d
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column person_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 4e1c60e0-2e79-4bbe-9388-73f9b1e29498
+		summarizeBy: none
+		sourceColumn: person_id
+
+		annotation SummarizationSetBy = User
+
+	column store_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 3c8e072a-7325-41d9-9b29-e5c46d766fb8
+		summarizeBy: none
+		sourceColumn: store_id
+
+		annotation SummarizationSetBy = User
+
+	column territory_id
+		dataType: int64
+		formatString: 0
+		lineageTag: f0f8c7a6-5eef-4098-af6d-f1ffe3c033ee
+		summarizeBy: none
+		sourceColumn: territory_id
+
+		annotation SummarizationSetBy = User
+
+	column person_name
+		dataType: string
+		lineageTag: ab75ee7f-8756-4b89-a4f8-1331e01f43b6
+		summarizeBy: none
+		sourceColumn: person_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column store_name
+		dataType: string
+		lineageTag: d58fadf2-22a1-4139-8255-1bec18e99968
+		summarizeBy: none
+		sourceColumn: store_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_type
+		dataType: string
+		lineageTag: 47628e04-a856-47d8-a920-6150a0666adb
+		summarizeBy: none
+		sourceColumn: customer_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column row_guid
+		dataType: string
+		lineageTag: 1912147d-eb1c-478c-a640-a7e723c604b2
+		summarizeBy: none
+		sourceColumn: row_guid
+
+		annotation SummarizationSetBy = Automatic
+
+	column modified_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 0ee0a868-39bf-4be2-a1d6-5e4f020b0077
+		summarizeBy: none
+		sourceColumn: modified_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column _loaded_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 8e0260c4-3246-4f59-bc34-6dbc534a2d25
+		summarizeBy: none
+		sourceColumn: _loaded_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column _source_table
+		dataType: string
+		lineageTag: 7557934a-b1f1-47b0-82c5-3e2bba291925
+		summarizeBy: none
+		sourceColumn: _source_table
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'analytics dim_customer' = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database("localhost:5434", "analytics"),
+				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_customer"]}[Data]
+				in
+				  #"Navigation 1"
+

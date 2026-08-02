@@ -1,0 +1,79 @@
+table 'analytics dim_sales_territory'
+	lineageTag: 7338cf5b-6106-4877-8e44-32aabc07b202
+
+	column territory_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 16eacbd4-b376-4cb7-9335-463a63b41041
+		summarizeBy: none
+		sourceColumn: territory_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column territory_name
+		dataType: string
+		lineageTag: 122e983d-7f8c-48ee-be29-a52bac6b48a6
+		summarizeBy: none
+		sourceColumn: territory_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column country_region_code
+		dataType: string
+		lineageTag: f5305a7a-e59d-4ebb-be7a-f862bfeb6d6b
+		summarizeBy: none
+		sourceColumn: country_region_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column territory_group
+		dataType: string
+		lineageTag: dc5d1a29-861f-4f69-b110-5791587a6448
+		summarizeBy: none
+		sourceColumn: territory_group
+
+		annotation SummarizationSetBy = Automatic
+
+	column row_guid
+		dataType: string
+		lineageTag: 3bfe55c6-c8f4-4b52-8158-d0043d897e13
+		summarizeBy: none
+		sourceColumn: row_guid
+
+		annotation SummarizationSetBy = Automatic
+
+	column modified_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 8fe8dc51-e7c0-4ff6-b85f-bf5011545068
+		summarizeBy: none
+		sourceColumn: modified_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column _loaded_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b7522a22-07ce-459e-a37c-5e6b5344aa93
+		summarizeBy: none
+		sourceColumn: _loaded_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column _source_table
+		dataType: string
+		lineageTag: 0c9cfb8a-7ba6-41d7-8302-096f67316385
+		summarizeBy: none
+		sourceColumn: _source_table
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'analytics dim_sales_territory' = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database("localhost:5434", "analytics"),
+				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_sales_territory"]}[Data]
+				in
+				  #"Navigation 1"
+

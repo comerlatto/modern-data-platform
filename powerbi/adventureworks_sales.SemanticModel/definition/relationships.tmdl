@@ -1,0 +1,24 @@
+relationship AutoDetected_394bc551-34bf-4155-a51b-784f6444d9a7
+	fromColumn: 'analytics fact_sales'.customer_id
+	toColumn: 'analytics dim_customer'.customer_id
+
+relationship AutoDetected_1c445774-a9d0-4d74-98f0-269b427d9dd1
+	fromColumn: 'analytics fact_sales'.territory_id
+	toColumn: 'analytics dim_sales_territory'.territory_id
+
+relationship AutoDetected_218f1c34-e072-4122-b36e-befe2dfee1be
+	fromColumn: 'analytics fact_sales'.product_id
+	toColumn: 'analytics dim_product'.product_id
+
+relationship AutoDetected_de15277a-e14a-4b91-85f8-e69a8a004c0e
+	fromColumn: 'analytics fact_sales'.sales_person_id
+	toColumn: 'analytics dim_sales_person'.sales_person_id
+
+relationship AutoDetected_7105a6c1-a4c5-41c7-954e-0e7e20006798
+	fromColumn: 'analytics fact_sales'.special_offer_id
+	toColumn: 'analytics dim_special_offer'.special_offer_id
+
+relationship 2cf3a4aa-de4d-5ed1-919b-d80697e2bfb3
+	fromColumn: 'analytics fact_sales'.order_date_id
+	toColumn: 'analytics dim_date'.date_id
+
