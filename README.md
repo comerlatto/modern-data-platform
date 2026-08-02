@@ -293,6 +293,24 @@ models:
 
 O contrato garante que as colunas e os tipos produzidos pelo SQL correspondam ao YAML. O preenchimento de `description`, entretanto, não se torna obrigatório apenas com `contract.enforced`; essa regra poderá ser adicionada futuramente ao processo de CI.
 
+---
+
+# Design e Prototipação
+
+A camada de visualização foi planejada antes da implementação no Power BI, com o objetivo de garantir consistência visual, clareza e facilidade de uso.
+
+O processo adotado contempla:
+
+- definição do design system;
+- prototipação da interface no Figma;
+- implementação dos componentes funcionais no Power BI;
+- versionamento do projeto no formato PBIP.
+
+As regras de cores, tipografia, espaçamento, componentes e visualização de dados estão documentadas no [Design System](docs/design-system.md).
+
+---
+
+
 ## Chaves e relacionamentos
 
 O projeto combina três recursos do dbt:
