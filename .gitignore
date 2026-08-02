@@ -20,6 +20,7 @@ dbt/dbt_packages/
 
 **/.pbi/localSettings.json
 **/.pbi/cache.abf
+**/.pbi/editorSettings.json
 
 # Airflow: ignora logs, mas preserva a pasta no Git
 !airflow/logs/
