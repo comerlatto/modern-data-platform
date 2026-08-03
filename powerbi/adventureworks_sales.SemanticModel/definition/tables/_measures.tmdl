@@ -630,6 +630,157 @@ table _measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	measure 'Participação do Território nas Vendas' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    CALCULATE (
+			        [Vendas Líquidas],
+			        REMOVEFILTERS ( 'analytics dim_sales_territory' )
+			    )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 6bcaa022-6541-40a3-b71b-6d3bb6214f34
+
+	measure 'Ranking de Território por Vendas' =
+
+			IF (
+			    ISINSCOPE ( 'analytics dim_sales_territory'[territory_name] ),
+			    RANKX (
+			        ALLSELECTED ( 'analytics dim_sales_territory'[territory_name] ),
+			        [Vendas Líquidas],
+			        ,
+			        DESC,
+			        DENSE
+			    )
+			)
+		formatString: 0
+		lineageTag: 4d08fdff-f2c4-4bdd-aca0-f6c637d11e2e
+
+	measure 'Clientes Ativos por Território' =
+
+			[Clientes Ativos]
+		formatString: #,0
+		lineageTag: 0f307305-fdc5-4186-9f75-ed9267889e1e
+
+	measure 'Participação do Território nos Pedidos' =
+
+			DIVIDE (
+			    [Total de Pedidos],
+			    CALCULATE (
+			        [Total de Pedidos],
+			        REMOVEFILTERS ( 'analytics dim_sales_territory' )
+			    )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 79bb8503-299e-445b-a8e2-d0cd64d7cbd6
+
+	measure 'Índice de Ticket do Território' =
+
+			DIVIDE (
+			    [Ticket Médio],
+			    CALCULATE (
+			        [Ticket Médio],
+			        REMOVEFILTERS ( 'analytics dim_sales_territory' )
+			    )
+			)
+		lineageTag: 2040125f-09a5-4144-a0eb-a8e8626828ea
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Índice de Vendas por Cliente do Território' =
+
+			DIVIDE (
+			    [Vendas Médias por Cliente],
+			    CALCULATE (
+			        [Vendas Médias por Cliente],
+			        REMOVEFILTERS ( 'analytics dim_sales_territory' )
+			    )
+			)
+		lineageTag: 26b2292e-fa20-4d28-a385-678509dd448a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Participação do Vendedor nas Vendas' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    CALCULATE (
+			        [Vendas Líquidas],
+			        REMOVEFILTERS ( 'analytics dim_sales_person' )
+			    )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 408e90eb-1fd7-4719-883c-f71211613162
+
+	measure 'Ranking de Vendedor por Vendas' =
+
+			VAR VendedorAtual =
+			    SELECTEDVALUE (
+			        'analytics dim_sales_person'[full_name]
+			    )
+			RETURN
+			    IF (
+			        ISINSCOPE (
+			            'analytics dim_sales_person'[full_name]
+			        )
+			            && NOT ISBLANK ( VendedorAtual ),
+			        RANKX (
+			            FILTER (
+			                ALLSELECTED (
+			                    'analytics dim_sales_person'[full_name]
+			                ),
+			                NOT ISBLANK (
+			                    'analytics dim_sales_person'[full_name]
+			                )
+			            ),
+			            [Vendas Líquidas],
+			            ,
+			            DESC,
+			            DENSE
+			        )
+			    )
+		formatString: 0
+		lineageTag: 3e4ae80b-86c8-4f8b-bc01-ab0f84af4b4f
+
+	measure 'Participação do Vendedor nos Pedidos' =
+
+			DIVIDE (
+			    [Total de Pedidos],
+			    CALCULATE (
+			        [Total de Pedidos],
+			        REMOVEFILTERS ( 'analytics dim_sales_person' )
+			    )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 503ca075-0a13-4252-b2d7-958db29808dc
+
+	measure 'Índice de Ticket do Vendedor' =
+
+			DIVIDE (
+			    [Ticket Médio],
+			    CALCULATE (
+			        [Ticket Médio],
+			        REMOVEFILTERS ( 'analytics dim_sales_person' )
+			    )
+			)
+		lineageTag: 71fc0c64-c918-4d05-8a1a-1d49d3344346
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Índice de Vendas por Cliente do Vendedor' =
+
+			DIVIDE (
+			    [Vendas Médias por Cliente],
+			    CALCULATE (
+			        [Vendas Médias por Cliente],
+			        REMOVEFILTERS ( 'analytics dim_sales_person' )
+			    )
+			)
+		lineageTag: b988f045-c35f-47e1-9298-05e03e57f34e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
 	partition _measures = m
 		mode: import
 		source =
