@@ -135,4 +135,3 @@ table 'analytics dim_sales_person'
 				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_sales_person"]}[Data]
 				in
 				  #"Navigation 1"
-

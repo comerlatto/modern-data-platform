@@ -208,4 +208,3 @@ table 'analytics fact_sales'
 				  #"Navigation 1" = Source{[Schema = "analytics", Item = "fact_sales"]}[Data]
 				in
 				  #"Navigation 1"
-

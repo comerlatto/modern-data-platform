@@ -21,4 +21,3 @@ relationship AutoDetected_7105a6c1-a4c5-41c7-954e-0e7e20006798
 relationship 2cf3a4aa-de4d-5ed1-919b-d80697e2bfb3
 	fromColumn: 'analytics fact_sales'.order_date_id
 	toColumn: 'analytics dim_date'.date_id
-

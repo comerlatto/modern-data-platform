@@ -30,28 +30,28 @@ table 'analytics dim_date'
 		dataType: int64
 		formatString: 0
 		lineageTag: ba37d6d8-7bef-4ab2-8f24-03c6387426ac
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: year_number
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column semester_number
 		dataType: int64
 		formatString: 0
 		lineageTag: fafedbc5-5461-48db-b392-5bf6e93c33e8
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: semester_number
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column quarter_number
 		dataType: int64
 		formatString: 0
 		lineageTag: 50cf0a94-0144-4fa1-b830-35ab7219b2bf
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: quarter_number
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column year_quarter
 		dataType: string
@@ -65,10 +65,10 @@ table 'analytics dim_date'
 		dataType: int64
 		formatString: 0
 		lineageTag: c217ef37-5b0a-4be8-ab7c-5485382002f6
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: month_number
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column month_name
 		dataType: string
@@ -93,19 +93,19 @@ table 'analytics dim_date'
 		dataType: int64
 		formatString: 0
 		lineageTag: 2d5d71ab-eccb-4208-972c-39e5bf68c7ad
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: iso_week_number
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column iso_week_year
 		dataType: int64
 		formatString: 0
 		lineageTag: d6744aaa-42ad-41ce-a88a-b1875f30d9f0
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: iso_week_year
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column year_iso_week
 		dataType: string
@@ -119,19 +119,19 @@ table 'analytics dim_date'
 		dataType: int64
 		formatString: 0
 		lineageTag: 70bb379b-c38b-4861-b0f0-76e2be498558
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: day_of_month
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column day_of_week_number
 		dataType: int64
 		formatString: 0
 		lineageTag: cfcd0f9f-941f-4848-b272-5defbf9bb30f
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: day_of_week_number
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column day_of_week_name
 		dataType: string
@@ -161,4 +161,3 @@ table 'analytics dim_date'
 				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_date"]}[Data]
 				in
 				  #"Navigation 1"
-

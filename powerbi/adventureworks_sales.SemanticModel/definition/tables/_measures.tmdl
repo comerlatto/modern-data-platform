@@ -1,23 +1,644 @@
 table _measures
 	lineageTag: 341ab108-c4da-4443-a77a-dbc907223acb
 
-	column Column1
-		dataType: string
-		lineageTag: 1dbff402-b80f-4307-b7df-5e34fd96cdc8
-		summarizeBy: none
-		sourceColumn: Column1
+	measure 'Vendas Líquidas' =
 
-		annotation SummarizationSetBy = Automatic
+			SUM ( 'analytics fact_sales'[net_amount] )
+		formatString: #,0.00
+		lineageTag: dada1f33-0d7b-4b99-bf10-84b6871c25fa
+
+	measure 'Total de Pedidos' =
+
+			DISTINCTCOUNT ( 'analytics fact_sales'[sales_order_id] )
+		formatString: #,0
+		lineageTag: 228c3c51-cb01-462c-bedf-d4677605e0d0
+
+	measure 'Quantidade Vendida' =
+
+			SUM ( 'analytics fact_sales'[order_quantity] )
+		formatString: #,0
+		lineageTag: 6464cb9b-254b-4864-adac-0e37a55c72c1
+
+	measure 'Ticket Médio' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    [Total de Pedidos]
+			)
+		formatString: #,0.00
+		lineageTag: c09aa694-2251-479b-bc47-67cea267b1cd
+
+	measure 'Valor Médio por Unidade' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    [Quantidade Vendida]
+			)
+		lineageTag: 28bcdf58-2350-4471-9928-69827ec9a42d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Unidades por Pedido' =
+
+			DIVIDE (
+			    [Quantidade Vendida],
+			    [Total de Pedidos]
+			)
+		lineageTag: 797ef9a2-a1bc-4469-a131-ae0e4816297c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Valor Bruto' =
+
+			SUMX (
+			    'analytics fact_sales',
+			    'analytics fact_sales'[unit_price]
+			        * 'analytics fact_sales'[order_quantity]
+			)
+		lineageTag: a6698ca8-c1cc-4471-a743-aacba940f9b1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Valor de Desconto' =
+
+			[Valor Bruto] - [Vendas Líquidas]
+		lineageTag: 3daa1820-1a10-485e-bcea-856a3393ccc7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Percentual de Desconto' =
+
+			DIVIDE (
+			    [Valor de Desconto],
+			    [Valor Bruto]
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: ba0da912-d468-4027-81bb-8f4e09937a88
+
+	measure 'Clientes Ativos' =
+
+			DISTINCTCOUNT ( 'analytics fact_sales'[customer_id] )
+		formatString: #,0
+		lineageTag: 6ffd2a31-2df5-4f29-bbb2-34ff84f23b8b
+
+	measure 'Receita Média por Cliente' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    [Clientes Ativos]
+			)
+		lineageTag: 52ebfc82-cf2c-49ef-8873-1d3b29621bc5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Pedidos por Cliente' =
+
+			DIVIDE (
+			    [Total de Pedidos],
+			    [Clientes Ativos]
+			)
+		lineageTag: 59d412ee-4c99-4333-8a26-c99d8d638b86
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas Líquidas Ano Anterior' =
+
+			CALCULATE (
+			    [Vendas Líquidas],
+			    SAMEPERIODLASTYEAR ( 'analytics dim_date'[full_date] )
+			)
+		lineageTag: 66a66e62-5226-4276-acbd-c353ef70818d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Crescimento de Vendas YoY' =
+
+			VAR VendasAtuais = [Vendas Líquidas]
+			VAR VendasAnoAnterior = [Vendas Líquidas Ano Anterior]
+			RETURN
+			    IF (
+			        NOT ISBLANK ( VendasAtuais )
+			            && NOT ISBLANK ( VendasAnoAnterior ),
+			        DIVIDE (
+			            VendasAtuais - VendasAnoAnterior,
+			            VendasAnoAnterior
+			        )
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a4f6aa32-3c03-4abf-a824-6451eea0328f
+
+	measure 'Variação de Vendas YoY' =
+
+			VAR VendasAtuais = [Vendas Líquidas]
+			VAR VendasAnoAnterior = [Vendas Líquidas Ano Anterior]
+			RETURN
+			    IF (
+			        NOT ISBLANK ( VendasAtuais )
+			            && NOT ISBLANK ( VendasAnoAnterior ),
+			        VendasAtuais - VendasAnoAnterior
+			    )
+		lineageTag: db84a903-6c6d-4fae-837f-b8627f284e1b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas Líquidas YTD' =
+
+			TOTALYTD (
+			    [Vendas Líquidas],
+			    'analytics dim_date'[full_date]
+			)
+		lineageTag: 93d82256-9f72-422b-a805-66a1d87c6838
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas Líquidas YTD Ano Anterior' =
+
+			CALCULATE (
+			    [Vendas Líquidas YTD],
+			    SAMEPERIODLASTYEAR ( 'analytics dim_date'[full_date] )
+			)
+		lineageTag: a56d4de5-8f4d-492b-aa53-ce7ce6367212
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Crescimento de Vendas YTD YoY' =
+
+			VAR VendasYTD = [Vendas Líquidas YTD]
+			VAR VendasYTDAnoAnterior = [Vendas Líquidas YTD Ano Anterior]
+			RETURN
+			    IF (
+			        NOT ISBLANK ( VendasYTD )
+			            && NOT ISBLANK ( VendasYTDAnoAnterior ),
+			        DIVIDE (
+			            VendasYTD - VendasYTDAnoAnterior,
+			            VendasYTDAnoAnterior
+			        )
+			    )
+		formatString: #,0.0%;-#,0.0%;#,0.0%
+		lineageTag: 5ad0ac95-6430-466a-b06b-a5407d339384
+
+	measure 'Variação de Vendas YTD YoY' =
+
+			VAR VendasYTD = [Vendas Líquidas YTD]
+			VAR VendasYTDAnoAnterior = [Vendas Líquidas YTD Ano Anterior]
+			RETURN
+			    IF (
+			        NOT ISBLANK ( VendasYTD )
+			            && NOT ISBLANK ( VendasYTDAnoAnterior ),
+			        VendasYTD - VendasYTDAnoAnterior
+			    )
+		lineageTag: 59dcefd1-f049-4c7b-b7e2-43a4386d1aea
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas Líquidas Mês Anterior' =
+
+			CALCULATE (
+			    [Vendas Líquidas],
+			    DATEADD (
+			        'analytics dim_date'[full_date],
+			        -1,
+			        MONTH
+			    )
+			)
+		lineageTag: c1351a29-3dde-4a9e-b8a2-16634a9fbc5c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Crescimento de Vendas MoM' =
+
+			VAR VendasAtuais = [Vendas Líquidas]
+			VAR VendasMesAnterior = [Vendas Líquidas Mês Anterior]
+			RETURN
+			    IF (
+			        ISINSCOPE ( 'analytics dim_date'[month_name] )
+			            && NOT ISBLANK ( VendasAtuais )
+			            && NOT ISBLANK ( VendasMesAnterior ),
+			        DIVIDE (
+			            VendasAtuais - VendasMesAnterior,
+			            VendasMesAnterior
+			        )
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 40d7df59-2136-44b9-9164-b71a592becd7
+
+	measure 'Variação de Vendas MoM' =
+
+			VAR VendasAtuais = [Vendas Líquidas]
+			VAR VendasMesAnterior = [Vendas Líquidas Mês Anterior]
+			RETURN
+			    IF (
+			        ISINSCOPE ( 'analytics dim_date'[month_name] )
+			            && NOT ISBLANK ( VendasAtuais )
+			            && NOT ISBLANK ( VendasMesAnterior ),
+			        VendasAtuais - VendasMesAnterior
+			    )
+		lineageTag: 94a2d411-d79d-4140-b86c-58d01ab34c11
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Participação nas Vendas do Ano' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    CALCULATE (
+			        [Vendas Líquidas],
+			        REMOVEFILTERS (
+			            'analytics dim_date'[month_name],
+			            'analytics dim_date'[month_number]
+			        )
+			    )
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 004cb8bd-4176-41c7-b9f3-c263083701e2
+
+	measure 'Média Móvel de Vendas 3M' =
+
+			VAR DataAtual =
+			    MAX ( 'analytics dim_date'[full_date] )
+
+			VAR UltimosTresMeses =
+			    DATESINPERIOD (
+			        'analytics dim_date'[full_date],
+			        DataAtual,
+			        -3,
+			        MONTH
+			    )
+
+			VAR VendasPorMes =
+			    CALCULATETABLE (
+			        SUMMARIZE (
+			            'analytics dim_date',
+			            'analytics dim_date'[year_month],
+			            "@VendasMes", [Vendas Líquidas]
+			        ),
+			        REMOVEFILTERS ( 'analytics dim_date' ),
+			        UltimosTresMeses
+			    )
+
+			RETURN
+			    AVERAGEX (
+			        FILTER (
+			            VendasPorMes,
+			            NOT ISBLANK ( [@VendasMes] )
+			        ),
+			        [@VendasMes]
+			    )
+		lineageTag: 05544c8a-9507-4af1-89b1-57461ee8e6be
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Produtos Vendidos' =
+
+			DISTINCTCOUNT ( 'analytics fact_sales'[product_id] )
+		formatString: 0
+		lineageTag: 45161def-1d46-4220-b33d-ebcc2e7ba006
+
+	measure 'Quantidade Média por Produto' =
+
+			DIVIDE (
+			    [Quantidade Vendida],
+			    [Produtos Vendidos]
+			)
+		lineageTag: 8f13b81b-96c0-4a83-bbf6-88fa8caf55be
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas Médias por Produto' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    [Produtos Vendidos]
+			)
+		lineageTag: 80408432-256d-4f53-8ac7-8c8a3586f0ae
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Participação do Produto nas Vendas' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    CALCULATE (
+			        [Vendas Líquidas],
+			        REMOVEFILTERS ( 'analytics dim_product' )
+			    )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 2bd6008d-9912-4bc8-a516-a56fc78ed42e
+
+	measure 'Ranking de Produto por Vendas' =
+
+			IF (
+			    ISINSCOPE ( 'analytics dim_product'[product_name] ),
+			    RANKX (
+			        ALLSELECTED ( 'analytics dim_product'[product_name] ),
+			        [Vendas Líquidas],
+			        ,
+			        DESC,
+			        DENSE
+			    )
+			)
+		formatString: 0
+		lineageTag: 71287dec-d8b3-4542-b103-003189cc5660
+
+	measure 'Produto Top 10' =
+
+			IF (
+			    [Ranking de Produto por Vendas] <= 10,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 0cacf12d-5cf1-4aee-b7a6-ded94a934460
+
+	measure 'Vendas dos Produtos Top 10' =
+
+			VAR ProdutosTop10 =
+			    TOPN (
+			        10,
+			        ALLSELECTED ( 'analytics dim_product'[product_name] ),
+			        [Vendas Líquidas],
+			        DESC
+			    )
+			RETURN
+			    CALCULATE (
+			        [Vendas Líquidas],
+			        KEEPFILTERS ( ProdutosTop10 )
+			    )
+		lineageTag: ef636a28-7d0b-4b86-93a8-523e6fe219fe
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Participação dos Produtos Top 10' =
+
+			DIVIDE (
+			    [Vendas dos Produtos Top 10],
+			    [Vendas Líquidas]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e38c5d2f-ccd3-455a-9859-8fde28641375
+
+	measure 'Ranking de Produto por Quantidade' =
+
+			IF (
+			    ISINSCOPE ( 'analytics dim_product'[product_name] ),
+			    RANKX (
+			        ALLSELECTED ( 'analytics dim_product'[product_name] ),
+			        [Quantidade Vendida],
+			        ,
+			        DESC,
+			        DENSE
+			    )
+			)
+		formatString: 0
+		lineageTag: 29b373e0-00f8-42d5-9e3b-ef97f08894f7
+
+	measure 'Participação do Produto na Quantidade' =
+
+			DIVIDE (
+			    [Quantidade Vendida],
+			    CALCULATE (
+			        [Quantidade Vendida],
+			        REMOVEFILTERS ( 'analytics dim_product' )
+			    )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 1a524c54-f33d-4a21-83db-f5b55a866e0b
+
+	measure 'Preço Médio Realizado' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    [Quantidade Vendida]
+			)
+		lineageTag: a1eb8480-ad20-435a-b415-d418911ddd3f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Percentual de Desconto por Produto' =
+
+			DIVIDE (
+			    [Valor de Desconto],
+			    [Valor Bruto]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d5a889d5-2a8a-45e8-92ed-a069d355a107
+
+	measure 'Quantidade Média por Item' =
+
+			DIVIDE (
+			    [Quantidade Vendida],
+			    COUNTROWS ( 'analytics fact_sales' )
+			)
+		lineageTag: 23ece250-1d21-40ac-816c-ff829c19ea4a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Participação do Cliente nas Vendas' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    CALCULATE (
+			        [Vendas Líquidas],
+			        REMOVEFILTERS ( 'analytics dim_customer' )
+			    )
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: c0414fe3-11cb-4a41-b758-db73bf0a2534
+
+	measure 'Ranking de Cliente por Vendas' =
+
+			IF (
+			    ISINSCOPE ( 'analytics dim_customer'[person_name] ),
+			    RANKX (
+			        ALLSELECTED ( 'analytics dim_customer'[person_name] ),
+			        [Vendas Líquidas],
+			        ,
+			        DESC,
+			        DENSE
+			    )
+			)
+		formatString: 0
+		lineageTag: 89b4327e-2e5a-442c-a9e9-5f852f9c3ae4
+
+	measure 'Cliente Top 10' =
+
+			IF (
+			    [Ranking de Cliente por Vendas] <= 10,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 65c6492b-a64d-4324-aa54-7335865e15b6
+
+	measure 'Vendas dos Clientes Top 10' =
+
+			VAR ClientesTop10 =
+			    TOPN (
+			        10,
+			        ALLSELECTED ( 'analytics dim_customer'[person_name] ),
+			        [Vendas Líquidas],
+			        DESC
+			    )
+			RETURN
+			    CALCULATE (
+			        [Vendas Líquidas],
+			        KEEPFILTERS ( ClientesTop10 )
+			    )
+		lineageTag: f276605c-5094-4be3-a6d5-c03699394f43
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Participação dos Clientes Top 10' =
+
+			DIVIDE (
+			    [Vendas dos Clientes Top 10],
+			    [Vendas Líquidas]
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 06284e9e-0c59-449e-b8e2-9aedb9bd753d
+
+	measure 'Clientes Recorrentes' =
+
+			COUNTROWS (
+			    FILTER (
+			        VALUES ( 'analytics dim_customer'[customer_id] ),
+			        CALCULATE ( [Total de Pedidos] ) > 1
+			    )
+			)
+		formatString: #,0
+		lineageTag: f3b356c5-9f6e-4796-a054-ab91a77ac794
+
+	measure 'Taxa de Clientes Recorrentes' =
+
+			DIVIDE (
+			    [Clientes Recorrentes],
+			    [Clientes Ativos]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 79ebd990-c1f9-45cc-b33a-d7348cf6c7f1
+
+	measure 'Clientes de Compra Única' =
+
+			[Clientes Ativos] - [Clientes Recorrentes]
+		formatString: #,0
+		lineageTag: bd2a6617-2b6c-4406-a3bb-0fd6900a9f27
+
+	measure 'Taxa de Clientes de Compra Única' =
+
+			DIVIDE (
+			    [Clientes de Compra Única],
+			    [Clientes Ativos]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 33f4947b-4328-4cd7-9bb3-3f8ec3fb3c50
+
+	measure 'Pedidos por Cliente Recorrente' =
+
+			VAR PedidosClientesRecorrentes =
+			    SUMX (
+			        FILTER (
+			            VALUES ( 'analytics dim_customer'[customer_id] ),
+			            CALCULATE ( [Total de Pedidos] ) > 1
+			        ),
+			        CALCULATE ( [Total de Pedidos] )
+			    )
+			RETURN
+			    DIVIDE (
+			        PedidosClientesRecorrentes,
+			        [Clientes Recorrentes]
+			    )
+		lineageTag: 7d6c7915-b1cf-4831-a7e0-0b401dd37cff
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas de Clientes Recorrentes' =
+
+			SUMX (
+			    FILTER (
+			        VALUES ( 'analytics dim_customer'[customer_id] ),
+			        CALCULATE ( [Total de Pedidos] ) > 1
+			    ),
+			    CALCULATE ( [Vendas Líquidas] )
+			)
+		lineageTag: a12305ad-a704-41ec-bf31-f518aac00cd8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Participação dos Clientes Recorrentes' =
+
+			DIVIDE (
+			    [Vendas de Clientes Recorrentes],
+			    [Vendas Líquidas]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 15bc6672-f0f5-41a9-981f-a0a9c936682d
+
+	measure 'Ticket Médio de Clientes Recorrentes' =
+
+			DIVIDE (
+			    [Vendas de Clientes Recorrentes],
+			    VAR PedidosClientesRecorrentes =
+			        SUMX (
+			            FILTER (
+			                VALUES ( 'analytics dim_customer'[customer_id] ),
+			                CALCULATE ( [Total de Pedidos] ) > 1
+			            ),
+			            CALCULATE ( [Total de Pedidos] )
+			        )
+			    RETURN
+			        PedidosClientesRecorrentes
+			)
+		lineageTag: d3bf305c-5483-4231-91b3-260a2d4f28ba
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas de Clientes de Compra Única' =
+
+			[Vendas Líquidas] - [Vendas de Clientes Recorrentes]
+		lineageTag: dd30ac97-e27a-4f70-91b7-1d5c3ad79f21
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Ticket Médio de Clientes de Compra Única' =
+
+			DIVIDE (
+			    [Vendas de Clientes de Compra Única],
+			    [Clientes de Compra Única]
+			)
+		lineageTag: 29e45221-301c-47aa-a18c-8b5f18bbe73a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Índice de Ticket Recorrente vs Compra Única' =
+
+			DIVIDE (
+			    [Ticket Médio de Clientes Recorrentes],
+			    [Ticket Médio de Clientes de Compra Única]
+			)
+		lineageTag: e74daaf3-6216-4b73-9aa9-8a4a11654c76
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Vendas Médias por Cliente' =
+
+			DIVIDE (
+			    [Vendas Líquidas],
+			    [Clientes Ativos]
+			)
+		lineageTag: 34aaa3ce-2c15-43d5-8054-7faed808ed60
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	partition _measures = m
 		mode: import
 		source =
 				let
-				  Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45W0lWKjQUA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t])
+				  Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45W0lWKjQUA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Removed Columns" = Table.RemoveColumns(Source,{"Column1"})
 				in
-				  Source
+				  #"Removed Columns"
 
 	annotation PBI_NavigationStepName = Navigation
 
 	annotation PBI_ResultType = Table
-

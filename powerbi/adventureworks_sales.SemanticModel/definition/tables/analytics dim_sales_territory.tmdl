@@ -76,4 +76,3 @@ table 'analytics dim_sales_territory'
 				  #"Navigation 1" = Source{[Schema = "analytics", Item = "dim_sales_territory"]}[Data]
 				in
 				  #"Navigation 1"
-
