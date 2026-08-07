@@ -32,6 +32,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   adventure_works:
+    +group: sales_analytics
     staging:
       +materialized: view
 

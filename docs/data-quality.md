@@ -33,6 +33,23 @@ falhas. Elas não geram linhas em `dbt_test_failure_details`.
 O carregador é idempotente por `invocation_id`: uma nova tentativa de capturar
 os mesmos artefatos atualiza os metadados sem duplicar a execução.
 
+## Ownership
+
+Os modelos pertencem ao grupo `sales_analytics`, definido em
+`models/groups.yml`. O grupo registra o nome e o e-mail do responsável técnico.
+
+Durante a captura dos artefatos, o carregador percorre as dependências de cada
+teste no `manifest.json`, identifica o grupo do modelo relacionado e persiste os
+campos abaixo em `observability.dbt_test_results`:
+
+- `owner_group`;
+- `owner_name`;
+- `owner_email`.
+
+Um teste pode substituir o owner herdado configurando `owner_group`,
+`owner_name` e `owner_email` dentro de `config.meta`. Esses metadados permitem
+filtrar falhas por responsável e preparar notificações direcionadas no Airflow.
+
 ## Ofertas especiais
 
 Modelo validado: `stg_specialoffer`

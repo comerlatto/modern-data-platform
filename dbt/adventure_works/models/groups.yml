@@ -1,0 +1,10 @@
+version: 2
+
+groups:
+  - name: sales_analytics
+    description: >
+      Responsável pelos modelos e testes do domínio analítico de vendas do
+      Adventure Works.
+    owner:
+      name: Thiago Rodrigues
+      email: comerlatto.thiago@gmail.com

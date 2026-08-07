@@ -69,8 +69,20 @@ def create_observability_tables(connection: psycopg.Connection[Any]) -> None:
             message text,
             failure_relation text,
             depends_on jsonb not null,
+            owner_group text,
+            owner_name text,
+            owner_email text,
             primary key (invocation_id, test_unique_id)
         );
+
+        alter table {SCHEMA}.dbt_test_results
+            add column if not exists owner_group text;
+
+        alter table {SCHEMA}.dbt_test_results
+            add column if not exists owner_name text;
+
+        alter table {SCHEMA}.dbt_test_results
+            add column if not exists owner_email text;
 
         create table if not exists {SCHEMA}.dbt_test_failure_details (
             failure_detail_id bigint generated always as identity primary key,
@@ -114,6 +126,43 @@ def integer_or_none(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def resolve_test_owner(
+    manifest: dict[str, Any], test_node: dict[str, Any]
+) -> tuple[str | None, str | None, str | None]:
+    """Resolve a test owner from test meta or its upstream model groups."""
+    test_meta = test_node.get("config", {}).get("meta", {}) or {}
+    if test_meta.get("owner_email"):
+        return (
+            test_meta.get("owner_group"),
+            test_meta.get("owner_name") or test_meta.get("owner"),
+            test_meta["owner_email"],
+        )
+
+    groups_by_name = {
+        group.get("name"): group
+        for group in manifest.get("groups", {}).values()
+        if group.get("name")
+    }
+    resources = {
+        **manifest.get("sources", {}),
+        **manifest.get("nodes", {}),
+    }
+
+    for dependency_id in test_node.get("depends_on", {}).get("nodes", []):
+        dependency = resources.get(dependency_id, {})
+        group_name = dependency.get("group") or dependency.get("config", {}).get(
+            "group"
+        )
+        group = groups_by_name.get(group_name)
+        if not group:
+            continue
+
+        owner = group.get("owner", {}) or {}
+        return group_name, owner.get("name"), owner.get("email")
+
+    return None, None, None
 
 
 def persist_run(
@@ -190,6 +239,7 @@ def persist_test_results(
         test_metadata = node.get("test_metadata")
         test_type = "generic" if test_metadata else "singular"
         depends_on = node.get("depends_on", {}).get("nodes", [])
+        owner_group, owner_name, owner_email = resolve_test_owner(manifest, node)
 
         connection.execute(
             f"""
@@ -203,9 +253,12 @@ def persist_test_results(
                 execution_seconds,
                 message,
                 failure_relation,
-                depends_on
+                depends_on,
+                owner_group,
+                owner_name,
+                owner_email
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             on conflict (invocation_id, test_unique_id) do update set
                 test_name = excluded.test_name,
                 test_type = excluded.test_type,
@@ -214,7 +267,10 @@ def persist_test_results(
                 execution_seconds = excluded.execution_seconds,
                 message = excluded.message,
                 failure_relation = excluded.failure_relation,
-                depends_on = excluded.depends_on
+                depends_on = excluded.depends_on,
+                owner_group = excluded.owner_group,
+                owner_name = excluded.owner_name,
+                owner_email = excluded.owner_email
             """,
             (
                 invocation_id,
@@ -227,6 +283,9 @@ def persist_test_results(
                 result.get("message"),
                 node.get("relation_name"),
                 Jsonb(depends_on),
+                owner_group,
+                owner_name,
+                owner_email,
             ),
         )
 

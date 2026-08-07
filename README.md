@@ -111,6 +111,17 @@ Essa separação permite acompanhar execuções aprovadas e reprovadas sem
 confundir metadados de execução com os detalhes das falhas. As tabelas formam a
 base para alertas e para um futuro dashboard de observabilidade no Power BI.
 
+### Ownership
+
+Todos os modelos pertencem ao grupo dbt `sales_analytics`, que identifica o
+responsável técnico pelo domínio. O carregador resolve o owner de cada teste a
+partir do lineage registrado no `manifest.json` e adiciona grupo, nome e e-mail
+à tabela `observability.dbt_test_results`.
+
+Com isso, uma falha deixa de informar apenas qual teste quebrou: ela também
+indica quem deve ser acionado. A mesma informação poderá alimentar filtros no
+dashboard e notificações direcionadas pelo Airflow.
+
 Inicialmente, a DAG utiliza execução manual (`schedule=None`) para facilitar a validação do pipeline.
 
 ## Componentes do Airflow
