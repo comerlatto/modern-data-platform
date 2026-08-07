@@ -71,18 +71,21 @@ flowchart TD
 
 O Apache Airflow coordena a execução do pipeline por meio da DAG `adventureworks_pipeline`.
 
-O fluxo possui quatro tarefas:
+O fluxo possui cinco tarefas:
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[ingest_raw] --> B[dbt_source_freshness]
     B --> C[dbt_build]
-    C --> D[capture_dbt_observability]
+    B --> D[capture_source_freshness]
+    C --> E[capture_dbt_observability]
 ```
 
 - `ingest_raw`: executa o script Python responsável pela carga da camada RAW;
-- `dbt_source_freshness`: verifica a idade da última carga registrada em
-  `_loaded_at`; gera aviso após 25 horas e erro após 48 horas;
+- `dbt_source_freshness`: verifica freshness técnica e de negócio; gera aviso
+  após 25 horas e erro após 48 horas;
+- `capture_source_freshness`: persiste o conteúdo de `sources.json`, inclusive
+  quando a freshness falha e bloqueia o build;
 - `dbt_build`: constrói os modelos dbt e executa os testes de qualidade;
 - `capture_dbt_observability`: persiste o resultado dos testes e os registros
   inválidos a partir dos artefatos do dbt;
@@ -91,12 +94,37 @@ flowchart LR
 - novas tentativas são executadas automaticamente em caso de falha.
 
 Quando a freshness atinge `error`, `dbt_source_freshness` falha e o
-`dbt_build` não é executado. Um resultado `warn` fica registrado nos artefatos
-do dbt, mas não bloqueia o restante do pipeline.
+`dbt_build` não é executado. Um resultado `warn` não bloqueia o restante do
+pipeline. Nos dois casos, `capture_source_freshness` registra o resultado para
+investigação.
 
-A captura usa `trigger_rule="all_done"`, portanto também é executada quando um
-teste reprova. A falha original do `dbt_build` continua marcando a DAG como
-reprovada, enquanto as evidências são preservadas para investigação.
+As duas tarefas de captura usam `trigger_rule="all_done"`. Assim, a captura de
+freshness ocorre mesmo quando o gate de freshness falha, e a captura do build
+ocorre mesmo quando um teste reprova. A falha original continua marcando a DAG
+como reprovada, enquanto as evidências são preservadas para investigação.
+
+### Freshness técnica e de negócio
+
+A freshness possui duas interpretações complementares:
+
+- `salesorderheader` e `salesorderdetail` usam `modifieddate`. Essas tabelas
+  representam eventos transacionais e devem receber alterações diariamente;
+  portanto, o teste mede a idade do último evento de negócio disponível;
+- as tabelas cadastrais usam `_loaded_at`. Como clientes, produtos e demais
+  cadastros podem permanecer válidos sem sofrer alterações diárias, o teste
+  confirma que a extração e a carga no warehouse foram executadas recentemente.
+
+Essa separação evita considerar uma tabela transacional atualizada apenas
+porque ela foi recarregada e também evita falsos alarmes em dimensões que não
+precisam receber novos registros todos os dias.
+
+Nas tabelas transacionais, um campo como `_build_at` ou `_loaded_at` gerado
+pelo próprio pipeline não seria adequado para medir atividade de negócio: ele
+seria renovado sempre que a carga ou o build executasse, mesmo que a origem não
+tivesse recebido pedidos ou alterações. `modifieddate` foi escolhido porque
+representa a inclusão ou a alteração mais recente registrada no sistema de
+origem. `orderdate` poderia medir exclusivamente a chegada de novos pedidos,
+mas não capturaria atualizações em pedidos existentes.
 
 ## Fluxo de qualidade e bloqueios
 
@@ -167,6 +195,8 @@ Depois do build, o script `python/observability/load_dbt_artifacts.py` lê
 | `observability.dbt_runs` | Uma linha por execução do dbt |
 | `observability.dbt_test_results` | Uma linha por teste e execução |
 | `observability.dbt_test_failure_details` | Uma linha por registro inválido capturado |
+| `observability.source_freshness_runs` | Uma linha por execução de freshness |
+| `observability.source_freshness_results` | Uma linha por source e execução de freshness |
 
 Essa separação permite acompanhar execuções aprovadas e reprovadas sem
 confundir metadados de execução com os detalhes das falhas. As tabelas formam a

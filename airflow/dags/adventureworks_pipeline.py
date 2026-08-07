@@ -38,6 +38,19 @@ with DAG(
         ),
     )
 
+    capture_source_freshness = BashOperator(
+        task_id="capture_source_freshness",
+        bash_command=(
+            "python "
+            "/opt/airflow/project/python/observability/"
+            "load_source_freshness.py "
+            "--target-path /tmp/dbt-target/{{ ts_nodash }}/freshness "
+            "--orchestrator-run-id '{{ run_id }}' "
+            "--allow-missing"
+        ),
+        trigger_rule="all_done",
+    )
+
     dbt_build = BashOperator(
         task_id="dbt_build",
         bash_command=(
@@ -61,9 +74,6 @@ with DAG(
         trigger_rule="all_done",
     )
 
-    (
-        ingest_raw
-        >> dbt_source_freshness
-        >> dbt_build
-        >> capture_dbt_observability
-    )
+    ingest_raw >> dbt_source_freshness
+    dbt_source_freshness >> capture_source_freshness
+    dbt_source_freshness >> dbt_build >> capture_dbt_observability

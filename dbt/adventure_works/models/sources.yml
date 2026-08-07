@@ -18,9 +18,17 @@ sources:
     tables:
       - name: salesorderheader
         description: Cabeçalho dos pedidos de venda.
+        config:
+          loaded_at_field: modifieddate
+          meta:
+            freshness_type: business
 
       - name: salesorderdetail
         description: Itens dos pedidos de venda.
+        config:
+          loaded_at_field: modifieddate
+          meta:
+            freshness_type: business
 
       - name: customer
         description: Cadastro de clientes.

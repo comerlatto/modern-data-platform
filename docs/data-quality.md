@@ -26,9 +26,21 @@ O histórico é gravado no schema `observability`:
 | `dbt_runs` | Uma linha por execução do dbt |
 | `dbt_test_results` | Status, duração e quantidade de falhas de cada teste |
 | `dbt_test_failure_details` | Cópia em JSON dos registros inválidos |
+| `source_freshness_runs` | Status agregado de cada execução de freshness |
+| `source_freshness_results` | Idade, limite e status de cada source verificada |
 
 Execuções aprovadas aparecem em `dbt_runs` e `dbt_test_results` com zero
 falhas. Elas não geram linhas em `dbt_test_failure_details`.
+
+Os resultados de `dbt source freshness` são capturados separadamente a partir
+de `sources.json`. A captura usa `trigger_rule="all_done"` no Airflow, de modo
+que avisos e erros permanecem disponíveis mesmo quando a freshness impede a
+execução do `dbt build`.
+
+As tabelas transacionais `salesorderheader` e `salesorderdetail` medem a
+freshness de negócio pelo campo `modifieddate`. As demais sources medem a
+freshness técnica por `_loaded_at`, pois tabelas cadastrais podem não sofrer
+alterações diariamente mesmo quando a ingestão funciona corretamente.
 
 O carregador é idempotente por `invocation_id`: uma nova tentativa de capturar
 os mesmos artefatos atualiza os metadados sem duplicar a execução.
