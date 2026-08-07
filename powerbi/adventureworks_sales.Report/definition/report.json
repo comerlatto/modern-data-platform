@@ -50,6 +50,17 @@
           "type": "BaseTheme"
         }
       ]
+    },
+    {
+      "name": "RegisteredResources",
+      "type": "RegisteredResources",
+      "items": [
+        {
+          "name": "adventure_woks_powerbi_visao_e36396288974140556.png",
+          "path": "adventure_woks_powerbi_visao_e36396288974140556.png",
+          "type": "Image"
+        }
+      ]
     }
   ],
   "settings": {
