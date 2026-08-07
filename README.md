@@ -71,14 +71,22 @@ flowchart TD
 
 O Apache Airflow coordena a execução do pipeline por meio da DAG `adventureworks_pipeline`.
 
-O fluxo possui cinco tarefas:
+O fluxo possui onze tarefas: ingestão, freshness, quatro gates de transformação
+e cinco capturas de observabilidade.
 
 ```mermaid
 flowchart TD
     A[ingest_raw] --> B[dbt_source_freshness]
-    B --> C[dbt_build]
-    B --> D[capture_source_freshness]
-    C --> E[capture_dbt_observability]
+    B --> C[build_staging]
+    C --> D[build_intermediate]
+    D --> E[build_analytics]
+    E --> F[build_marts]
+
+    B --> O1[capture_source_freshness]
+    C --> O2[capture_staging]
+    D --> O3[capture_intermediate]
+    E --> O4[capture_analytics]
+    F --> O5[capture_marts]
 ```
 
 - `ingest_raw`: executa o script Python responsável pela carga da camada RAW;
@@ -86,22 +94,43 @@ flowchart TD
   após 25 horas e erro após 48 horas;
 - `capture_source_freshness`: persiste o conteúdo de `sources.json`, inclusive
   quando a freshness falha e bloqueia o build;
-- `dbt_build`: constrói os modelos dbt e executa os testes de qualidade;
-- `capture_dbt_observability`: persiste o resultado dos testes e os registros
-  inválidos a partir dos artefatos do dbt;
+- `build_staging`: constrói e testa os modelos de padronização das sources;
+- `build_intermediate`: constrói e testa as transformações reutilizáveis;
+- `build_analytics`: constrói e testa fatos e dimensões, sem incluir marts;
+- `build_marts`: constrói e testa os modelos destinados ao consumo;
+- `capture_staging`, `capture_intermediate`, `capture_analytics` e
+  `capture_marts`: persistem os resultados e registros inválidos dos artefatos
+  gerados por cada camada;
 - cada tarefa de processamento somente começa quando a anterior termina com
   sucesso;
 - novas tentativas são executadas automaticamente em caso de falha.
 
 Quando a freshness atinge `error`, `dbt_source_freshness` falha e o
-`dbt_build` não é executado. Um resultado `warn` não bloqueia o restante do
-pipeline. Nos dois casos, `capture_source_freshness` registra o resultado para
-investigação.
+`build_staging` não é executado. Um resultado `warn` não bloqueia o restante
+do pipeline. Nos dois casos, `capture_source_freshness` registra o resultado
+para investigação.
 
-As duas tarefas de captura usam `trigger_rule="all_done"`. Assim, a captura de
-freshness ocorre mesmo quando o gate de freshness falha, e a captura do build
-ocorre mesmo quando um teste reprova. A falha original continua marcando a DAG
-como reprovada, enquanto as evidências são preservadas para investigação.
+Todas as tarefas de captura usam `trigger_rule="all_done"`. Assim, a captura de
+uma camada ocorre mesmo quando um teste daquele gate reprova. A falha original
+continua marcando a DAG como reprovada e impede as camadas posteriores,
+enquanto as evidências da camada que falhou são preservadas para investigação.
+
+Cada comando `dbt build` utiliza um diretório de artefatos próprio:
+
+| Gate | Seleção dbt | Diretório de artefatos |
+| --- | --- | --- |
+| Staging | `path:models/staging` | `staging/` |
+| Intermediate | `path:models/intermediate` | `intermediate/` |
+| Analytics | `path:models/analytics --exclude mart_sales_details` | `analytics/` |
+| Marts | `mart_sales_details` | `marts/` |
+
+Essa separação evita que `run_results.json` e `manifest.json` sejam
+sobrescritos entre os gates e permite identificar duração, status e falhas por
+camada no Airflow e no histórico de observabilidade.
+
+Os comandos usam `--indirect-selection buildable`. Dessa forma, cada gate
+executa os testes cujas dependências pertencem à camada atual ou a camadas já
+construídas, sem antecipar testes que dependem de modelos downstream.
 
 ### Freshness técnica e de negócio
 

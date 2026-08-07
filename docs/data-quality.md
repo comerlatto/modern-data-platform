@@ -37,6 +37,12 @@ de `sources.json`. A captura usa `trigger_rule="all_done"` no Airflow, de modo
 que avisos e erros permanecem disponíveis mesmo quando a freshness impede a
 execução do `dbt build`.
 
+As transformações são executadas em quatro gates: `staging`, `intermediate`,
+`analytics` e `marts`. Cada gate grava seus artefatos dbt em um diretório
+próprio e possui uma tarefa de captura com `trigger_rule="all_done"`. Assim,
+uma reprovação bloqueia as camadas posteriores sem impedir a persistência das
+evidências produzidas pela camada que falhou.
+
 As tabelas transacionais `salesorderheader` e `salesorderdetail` medem a
 freshness de negócio pelo campo `modifieddate`. As demais sources medem a
 freshness técnica por `_loaded_at`, pois tabelas cadastrais podem não sofrer
