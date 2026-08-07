@@ -1,0 +1,24 @@
+version: 2
+
+exposures:
+  - name: adventureworks_sales_dashboard
+    label: AdventureWorks Sales Dashboard
+    type: dashboard
+    maturity: medium
+    description: >
+      Dashboard de vendas do Adventure Works no Power BI. Consolida os
+      principais indicadores comerciais e permite análises por cliente,
+      produto, período, território, vendedor e oferta especial.
+
+    depends_on:
+      - ref('fact_sales')
+      - ref('dim_customer')
+      - ref('dim_product')
+      - ref('dim_date')
+      - ref('dim_sales_territory')
+      - ref('dim_sales_person')
+      - ref('dim_special_offer')
+
+    owner:
+      name: Thiago Rodrigues
+      email: comerlatto.thiago@gmail.com

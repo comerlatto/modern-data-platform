@@ -16,10 +16,11 @@ A solução proposta separa processamento operacional e consumo analítico por m
 - modelagem dimensional;
 - testes automatizados de dados;
 - documentação e lineage;
+- exposure do dashboard de vendas no Power BI;
 - modelos orientados ao consumo;
 - orquestração com Apache Airflow;
 - histórico de testes e falhas para observabilidade;
-- futura visualização no Power BI.
+- visualização no Power BI.
 
 ## Estado atual
 
@@ -35,7 +36,7 @@ A primeira versão da camada analítica de vendas está concluída e validada.
 | Mart de detalhes de vendas | Concluído |
 | Orquestração com Airflow | Concluído |
 | Backend de observabilidade dbt | Concluído |
-| Dashboards no Power BI | Planejado |
+| Dashboard de vendas no Power BI | Concluído |
 
 O último `dbt build` executou **248 recursos e validações**, sem avisos ou erros:
 
@@ -440,6 +441,11 @@ conda run -n adventure-dbt dbt docs serve
 ```
 
 O lineage permite acompanhar o fluxo desde as fontes operacionais, passando pelas camadas `staging` e `intermediate`, até a `fact_sales`, suas dimensões e o `mart_sales_details`.
+
+O arquivo `dbt/adventure_works/models/exposures.yml` registra o dashboard
+AdventureWorks Sales como consumidor da `fact_sales` e das dimensões utilizadas
+no modelo semântico do Power BI. Com isso, o dbt Docs mostra o impacto dos
+modelos analíticos até o dashboard e identifica seu responsável técnico.
 
 ## Como executar
 
