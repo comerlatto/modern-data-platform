@@ -38,12 +38,6 @@ A primeira versão da camada analítica de vendas está concluída e validada.
 | Backend de observabilidade dbt | Concluído |
 | Dashboard de vendas no Power BI | Em Andamento |
 
-O último `dbt build` executou **248 recursos e validações**, sem avisos ou erros:
-
-```text
-PASS=248 WARN=0 ERROR=0 SKIP=0 TOTAL=248
-```
-
 ## Arquitetura
 
 ```mermaid
