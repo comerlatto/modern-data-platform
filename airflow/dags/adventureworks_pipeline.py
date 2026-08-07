@@ -27,6 +27,17 @@ with DAG(
         ),
     )
 
+    dbt_source_freshness = BashOperator(
+        task_id="dbt_source_freshness",
+        bash_command=(
+            "DBT_LOG_PATH=/tmp/dbt-logs "
+            "DBT_TARGET_PATH=/tmp/dbt-target/{{ ts_nodash }}/freshness "
+            "dbt source freshness "
+            "--project-dir /opt/airflow/project/dbt/adventure_works "
+            "--profiles-dir /opt/airflow/dbt"
+        ),
+    )
+
     dbt_build = BashOperator(
         task_id="dbt_build",
         bash_command=(
@@ -50,4 +61,9 @@ with DAG(
         trigger_rule="all_done",
     )
 
-    ingest_raw >> dbt_build >> capture_dbt_observability
+    (
+        ingest_raw
+        >> dbt_source_freshness
+        >> dbt_build
+        >> capture_dbt_observability
+    )

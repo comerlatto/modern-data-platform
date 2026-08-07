@@ -71,24 +71,90 @@ flowchart TD
 
 O Apache Airflow coordena a execução do pipeline por meio da DAG `adventureworks_pipeline`.
 
-O fluxo possui três tarefas:
+O fluxo possui quatro tarefas:
 
 ```mermaid
 flowchart LR
-    A[ingest_raw] --> B[dbt_build]
-    B --> C[capture_dbt_observability]
+    A[ingest_raw] --> B[dbt_source_freshness]
+    B --> C[dbt_build]
+    C --> D[capture_dbt_observability]
 ```
 
 - `ingest_raw`: executa o script Python responsável pela carga da camada RAW;
+- `dbt_source_freshness`: verifica a idade da última carga registrada em
+  `_loaded_at`; gera aviso após 25 horas e erro após 48 horas;
 - `dbt_build`: constrói os modelos dbt e executa os testes de qualidade;
 - `capture_dbt_observability`: persiste o resultado dos testes e os registros
   inválidos a partir dos artefatos do dbt;
-- a segunda tarefa somente começa quando a ingestão termina com sucesso;
+- cada tarefa de processamento somente começa quando a anterior termina com
+  sucesso;
 - novas tentativas são executadas automaticamente em caso de falha.
+
+Quando a freshness atinge `error`, `dbt_source_freshness` falha e o
+`dbt_build` não é executado. Um resultado `warn` fica registrado nos artefatos
+do dbt, mas não bloqueia o restante do pipeline.
 
 A captura usa `trigger_rule="all_done"`, portanto também é executada quando um
 teste reprova. A falha original do `dbt_build` continua marcando a DAG como
 reprovada, enquanto as evidências são preservadas para investigação.
+
+## Fluxo de qualidade e bloqueios
+
+O desenho abaixo representa o fluxo de qualidade pretendido e sua relação com
+o que está implementado atualmente:
+
+```mermaid
+flowchart TD
+    A["Source systems"] --> B["Carga da camada RAW"]
+    B --> C["Source freshness<br/>warn: 25 h · error: 48 h"]
+    C --> D{"Fresh enough?"}
+
+    D -- "Error" --> X["Block pipeline"]
+    D -- "Yes or warning" --> E["Staging models"]
+
+    E --> F["Technical tests<br/>not_null · unique<br/>accepted_values · ranges"]
+    F --> G{"Critical test passed?"}
+
+    G -- "No" --> X
+    G -- "Yes" --> H["Intermediate models"]
+
+    H --> I["Business-rule tests<br/>join duplication · dates<br/>amounts · exclusive conditions"]
+    I --> J{"Critical test passed?"}
+
+    J -- "No" --> X
+    J -- "Yes" --> K["Facts and dimensions"]
+
+    K --> L["Integrity and reconciliation<br/>PK · FK relationships<br/>amounts · order totals"]
+    L --> M{"Tests passed?"}
+
+    M -- "No" --> X
+    M -- "Yes" --> N["Trusted analytics-ready marts"]
+    N --> O["Power BI and analytics consumers"]
+
+    F -. "Store results" .-> P["Quality history<br/>dbt artifacts and failure details"]
+    I -. "Store results" .-> P
+    L -. "Store results" .-> P
+
+    X -. "Future" .-> Q["Send alert"]
+    G -. "Future" .-> R["Quarantine invalid records<br/>Store failure reason"]
+```
+
+O `dbt build` respeita o lineage dos modelos. Um teste com severidade de erro
+impede a execução dos recursos que dependem daquele ponto do grafo; por isso,
+uma falha em `staging` pode impedir modelos `intermediate`, e uma falha nesses
+modelos pode impedir fatos, dimensões e marts dependentes.
+
+Os testes técnicos validam preenchimento, unicidade, relacionamentos, valores
+aceitos e contratos. Os testes singulares cobrem regras de negócio e
+reconciliações financeiras. Seus resultados são lidos de `run_results.json` e
+`manifest.json`; quando `store_failures=true`, os registros inválidos também
+são persistidos em `observability.dbt_test_failure_details`.
+
+O fluxo ainda não implementa quarentena física de registros, envio automático
+de alertas nem uma classificação formal de testes não críticos com
+`severity: warn`. Esses itens aparecem no diagrama como evolução futura. Hoje,
+qualquer teste configurado com a severidade padrão `error` bloqueia seus nós
+dependentes.
 
 ## Observabilidade dos testes dbt
 

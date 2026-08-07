@@ -5,6 +5,15 @@ sources:
     description: Dados brutos carregados do banco transacional AdventureWorks.
     database: analytics
     schema: raw
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after:
+          count: 25
+          period: hour
+        error_after:
+          count: 48
+          period: hour
 
     tables:
       - name: salesorderheader
