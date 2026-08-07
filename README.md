@@ -36,7 +36,7 @@ A primeira versão da camada analítica de vendas está concluída e validada.
 | Mart de detalhes de vendas | Concluído |
 | Orquestração com Airflow | Concluído |
 | Backend de observabilidade dbt | Concluído |
-| Dashboard de vendas no Power BI | Concluído |
+| Dashboard de vendas no Power BI | Em Andamento |
 
 O último `dbt build` executou **248 recursos e validações**, sem avisos ou erros:
 
