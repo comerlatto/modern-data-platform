@@ -447,6 +447,19 @@ AdventureWorks Sales como consumidor da `fact_sales` e das dimensões utilizadas
 no modelo semântico do Power BI. Com isso, o dbt Docs mostra o impacto dos
 modelos analíticos até o dashboard e identifica seu responsável técnico.
 
+### Publicação do dbt Docs
+
+O workflow `.github/workflows/dbt-docs.yml` publica automaticamente a
+documentação no GitHub Pages quando arquivos do projeto dbt são alterados na
+branch `main`. A documentação fica disponível em:
+
+<https://comerlatto.github.io/modern-data-platform/>
+
+O workflow usa `--no-compile` e `--empty-catalog` para não depender do warehouse
+local nem expor suas credenciais. Por isso, a versão pública apresenta modelos,
+descrições, testes, lineage, groups, owners e exposures, mas não inclui
+estatísticas consultadas diretamente do PostgreSQL.
+
 ## Como executar
 
 Na raiz do projeto dbt:
