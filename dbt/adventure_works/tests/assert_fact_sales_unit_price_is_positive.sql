@@ -1,3 +1,5 @@
+{{ config(store_failures=true) }}
+
 -- Retorna itens de venda com preço unitário igual ou inferior a zero.
 
 select

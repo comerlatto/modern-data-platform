@@ -1,3 +1,5 @@
+{{ config(store_failures=true) }}
+
 -- Retorna itens cujo valor líquido diverge do valor bruto menos o desconto.
 -- É aceita uma diferença de até 0,0001 devido ao arredondamento das medidas.
 

@@ -1,5 +1,7 @@
+{{ config(store_failures=true) }}
+
 -- Reconcilia o subtotal oficial dos pedidos com a soma líquida de seus itens.
--- Retorna apenas pedidos com diferença superior a 0,01.
+-- Retorna pedidos ausentes em um dos lados ou com diferença superior a 0,01.
 -- Zero registros retornados significa que a reconciliação foi aprovada.
 
 with item_totals as (
@@ -17,20 +19,26 @@ with item_totals as (
 validation as (
 
     select
-        orders.sales_order_id,
+        coalesce(
+            orders.sales_order_id,
+            item_totals.sales_order_id
+        ) as sales_order_id,
         orders.subtotal as expected_subtotal,
         item_totals.calculated_subtotal,
         abs(
-            orders.subtotal - item_totals.calculated_subtotal
+            coalesce(orders.subtotal, 0)
+            - coalesce(item_totals.calculated_subtotal, 0)
         ) as difference
 
     from {{ ref('stg_salesorderheader') }} as orders
 
-    inner join item_totals
+    full outer join item_totals
         on orders.sales_order_id = item_totals.sales_order_id
 
 )
 
 select *
 from validation
-where difference > 0.01
+where expected_subtotal is null
+    or calculated_subtotal is null
+    or difference > 0.01

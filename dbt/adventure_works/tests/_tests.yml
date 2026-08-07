@@ -9,9 +9,9 @@ data_tests:
       O subtotal calculado corresponde à soma de net_amount por sales_order_id,
       considerando quantidade, preço unitário e desconto.
 
-      O teste retorna os pedidos cuja diferença entre o subtotal esperado e o
-      calculado seja superior a 0,01. Quando nenhuma linha é retornada, o teste
-      é aprovado.
+      O teste retorna pedidos ausentes em um dos lados da comparação ou cuja
+      diferença entre o subtotal esperado e o calculado seja superior a 0,01.
+      Quando nenhuma linha é retornada, o teste é aprovado.
 
       Este controle ajuda a identificar cálculos incorretos de desconto, itens
       perdidos ou duplicados e problemas na associação entre cabeçalhos e itens.

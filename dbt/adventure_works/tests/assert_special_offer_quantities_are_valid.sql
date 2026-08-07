@@ -1,3 +1,5 @@
+{{ config(store_failures=true) }}
+
 select
     special_offer_id,
     special_offer_description,

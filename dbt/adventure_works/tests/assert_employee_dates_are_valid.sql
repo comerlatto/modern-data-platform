@@ -1,3 +1,5 @@
+{{ config(store_failures=true) }}
+
 -- Retorna funcionários com datas cronologicamente inválidas.
 -- A idade mínima de 18 anos não é validada porque não foi confirmada como regra de negócio.
 

@@ -1,3 +1,5 @@
+{{ config(store_failures=true) }}
+
 -- Retorna itens de venda com quantidade igual ou inferior a zero.
 
 select
@@ -8,4 +10,3 @@ from {{ ref('fact_sales') }}
 
 where
     order_quantity <= 0
-    

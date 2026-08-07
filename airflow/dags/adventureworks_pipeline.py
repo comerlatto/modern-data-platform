@@ -31,11 +31,23 @@ with DAG(
         task_id="dbt_build",
         bash_command=(
             "DBT_LOG_PATH=/tmp/dbt-logs "
-            "DBT_TARGET_PATH=/tmp/dbt-target "
+            "DBT_TARGET_PATH=/tmp/dbt-target/{{ ts_nodash }} "
             "dbt build "
             "--project-dir /opt/airflow/project/dbt/adventure_works "
             "--profiles-dir /opt/airflow/dbt"
         ),
     )
 
-    ingest_raw >> dbt_build
+    capture_dbt_observability = BashOperator(
+        task_id="capture_dbt_observability",
+        bash_command=(
+            "python "
+            "/opt/airflow/project/python/observability/load_dbt_artifacts.py "
+            "--target-path /tmp/dbt-target/{{ ts_nodash }} "
+            "--orchestrator-run-id '{{ run_id }}' "
+            "--allow-missing"
+        ),
+        trigger_rule="all_done",
+    )
+
+    ingest_raw >> dbt_build >> capture_dbt_observability

@@ -1,3 +1,5 @@
+{{ config(store_failures=true) }}
+
 -- Retorna funcionários com saldos de horas negativos.
 
 select

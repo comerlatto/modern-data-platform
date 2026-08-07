@@ -17,7 +17,8 @@ A solução proposta separa processamento operacional e consumo analítico por m
 - testes automatizados de dados;
 - documentação e lineage;
 - modelos orientados ao consumo;
-- futura orquestração com Apache Airflow;
+- orquestração com Apache Airflow;
+- histórico de testes e falhas para observabilidade;
 - futura visualização no Power BI.
 
 ## Estado atual
@@ -32,7 +33,8 @@ A primeira versão da camada analítica de vendas está concluída e validada.
 | Contratos e testes dbt | Concluído |
 | Catálogo e lineage do dbt | Concluído |
 | Mart de detalhes de vendas | Concluído |
-| Orquestração com Airflow | Próxima etapa |
+| Orquestração com Airflow | Concluído |
+| Backend de observabilidade dbt | Concluído |
 | Dashboards no Power BI | Planejado |
 
 O último `dbt build` executou **248 recursos e validações**, sem avisos ou erros:
@@ -74,17 +76,40 @@ flowchart TD
 
 O Apache Airflow coordena a execução do pipeline por meio da DAG `adventureworks_pipeline`.
 
-O fluxo possui duas tarefas:
+O fluxo possui três tarefas:
 
 ```mermaid
 flowchart LR
     A[ingest_raw] --> B[dbt_build]
+    B --> C[capture_dbt_observability]
 ```
 
 - `ingest_raw`: executa o script Python responsável pela carga da camada RAW;
 - `dbt_build`: constrói os modelos dbt e executa os testes de qualidade;
+- `capture_dbt_observability`: persiste o resultado dos testes e os registros
+  inválidos a partir dos artefatos do dbt;
 - a segunda tarefa somente começa quando a ingestão termina com sucesso;
 - novas tentativas são executadas automaticamente em caso de falha.
+
+A captura usa `trigger_rule="all_done"`, portanto também é executada quando um
+teste reprova. A falha original do `dbt_build` continua marcando a DAG como
+reprovada, enquanto as evidências são preservadas para investigação.
+
+## Observabilidade dos testes dbt
+
+Os testes singulares armazenam as linhas inválidas com `store_failures=true`.
+Depois do build, o script `python/observability/load_dbt_artifacts.py` lê
+`run_results.json` e `manifest.json` e grava o histórico no PostgreSQL.
+
+| Tabela | Grão |
+| --- | --- |
+| `observability.dbt_runs` | Uma linha por execução do dbt |
+| `observability.dbt_test_results` | Uma linha por teste e execução |
+| `observability.dbt_test_failure_details` | Uma linha por registro inválido capturado |
+
+Essa separação permite acompanhar execuções aprovadas e reprovadas sem
+confundir metadados de execução com os detalhes das falhas. As tabelas formam a
+base para alertas e para um futuro dashboard de observabilidade no Power BI.
 
 Inicialmente, a DAG utiliza execução manual (`schedule=None`) para facilitar a validação do pipeline.
 

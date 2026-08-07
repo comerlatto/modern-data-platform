@@ -1,3 +1,5 @@
+{{ config(store_failures=true) }}
+
 select
     business_entity_id,
     sales_quota,
