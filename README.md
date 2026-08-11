@@ -54,6 +54,30 @@ flowchart TD
     I -. orquestra .-> D
 ```
 
+## Princípios arquiteturais e avaliação atual
+
+As decisões da plataforma seguem princípios arquiteturais proporcionais ao
+estágio e à escala do projeto. A avaliação abaixo registra tanto os pontos já
+atendidos quanto as lacunas conhecidas, sem introduzir complexidade que o
+cenário atual não exige.
+
+| # | Princípio | Avaliação atual | Justificativa |
+| --- | --- | --- | --- |
+| 1 | Componentes comuns | Atendido | GitHub, Airflow, dbt, PostgreSQL e os padrões de camadas são compartilhados por todo o projeto. |
+| 2 | Planejar para falhas | Parcialmente atendido | Há testes, freshness, retries automáticos, bloqueio do pipeline e preservação de evidências. Ainda faltam alertas, runbooks e uma estratégia documentada de recuperação. |
+| 3 | Escalabilidade | Atendido para a escala atual | PostgreSQL e cargas em lote atendem ao volume atual; a arquitetura não precisa escalar além do problema existente. |
+| 4 | Arquitetura como liderança | Parcialmente atendido | Decisões, trade-offs e padrões são documentados para que possam ser compreendidos, avaliados e reutilizados por outras pessoas. |
+| 5 | Arquitetura contínua | Atendido | A arquitetura é revisada de forma incremental, com lacunas identificadas e evoluções registradas no roadmap. |
+| 6 | Baixo acoplamento | Parcialmente atendido | Ingestão, transformação, orquestração e consumo estão separados, mas a ingestão ainda é específica para PostgreSQL e recria a camada `raw`. |
+| 7 | Decisões reversíveis | Parcialmente atendido | Git, Docker, camadas separadas e regras centralizadas no dbt favorecem mudanças. A dependência de PostgreSQL e de SQL específico exigiria adaptação em uma migração. |
+| 8 | Segurança | Documentado; sem implementação necessária agora | O dataset é público e não contém dados pessoais reais. Em produção, campos classificados como PII seriam identificados e protegidos por mascaramento, remoção ou controle de acesso. Credenciais devem permanecer fora do versionamento. |
+| 9 | FinOps | Não aplicável operacionalmente no momento | A execução é local e não gera custos de nuvem a monitorar. O princípio passa a ser relevante na avaliação de alternativas como PostgreSQL e Snowflake. |
+
+A principal lacuna prática está no planejamento para falhas: alertas,
+procedimentos de resposta a incidentes e recuperação devem ser tratados como
+evoluções futuras. Os demais pontos pendentes são, neste estágio,
+principalmente oportunidades de documentação e desacoplamento gradual.
+
 ## Stack tecnológica
 
 | Área | Tecnologia |
