@@ -689,6 +689,10 @@ A `fact_sales` preserva chaves dimensionais e métricas no modelo estrela. O `ma
 
 Fatos e dimensões utilizam contratos para garantir compatibilidade entre o SQL produzido e a estrutura declarada no YAML.
 
+### ADR-004 — Ciclo de vida e temperatura dos dados
+
+Políticas de ciclo de vida e a separação entre dados quentes, mornos e frios foram consideradas, mas não são necessárias para o escopo e o volume atuais do projeto. Por isso, essa capacidade não integra o backlog de implementação. A decisão deverá ser reavaliada caso a plataforma passe a simular volumes significativamente maiores ou a manter um histórico com períodos extensos de retenção.
+
 ## Objetivo profissional
 
 Este projeto foi criado para demonstrar competências relevantes para posições de:
