@@ -374,15 +374,22 @@ telemetria segue o mesmo `run_id` do Airflow e é centralizada em:
 | `observability.ingestion_runs` | ingestão Python | contagens, objeto Parquet, tamanho, timestamps da extração, MinIO e RAW |
 | `observability.dataset_freshness` | ingestão e encerramento da DAG | timestamps por estágio, SLA e status |
 | `observability.dbt_runs` | artifacts dbt | metadados e status das execuções dbt |
+| `observability.dbt_manifest_nodes` | `manifest.json` | catálogo de sources e modelos, camada e dependências por execução orquestrada |
+| `observability.dbt_node_results` | `run_results.json` | status, duração e mensagem dos modelos executados em cada camada |
 | `observability.dbt_test_results` | `run_results.json` e `manifest.json` | testes, severidade, falhas, duração e ownership |
 | `observability.dbt_test_failure_details` | relações de falha dbt | registros inválidos capturados |
 | `observability.source_freshness_results` | `sources.json` | freshness técnica e de negócio das sources |
 
 O frontend não consulta Airflow, MinIO ou dbt diretamente. A FastAPI consolida
-os estados `success`, `running`, `warning`, `failed`, `blocked` e
-`not_started`. Se uma etapa falha, as dependentes são apresentadas como
-`blocked`. Falhas de escrita puramente observacional são registradas no output
-quando possível, mas não invalidam uma carga de dados que tenha sido concluída.
+os estados `success`, `running`, `warning`, `failed`, `blocked`, `not_started`,
+`not_applicable` e `unmonitored`. A jornada canônica é Origem, MinIO, Raw,
+Staging, Intermediate, Analytics e Power BI. A aplicabilidade das camadas dbt é
+derivada do lineage do `manifest.json`; ausência de evidência não é convertida
+em sucesso. Como ainda não há telemetria de atualização do modelo semântico, o
+Power BI é apresentado como não monitorado. Se uma etapa falha, as dependentes
+são apresentadas como bloqueadas. Falhas de escrita puramente observacional são
+registradas no output quando possível, mas não invalidam uma carga de dados que
+tenha sido concluída.
 
 Além do overview, a API oferece `/api/runs/latest`, `/api/runs/{run_id}`,
 `/api/runs/{run_id}/datasets`, `/api/runs/{run_id}/tests`,

@@ -10,6 +10,11 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg.rows import dict_row
 
+try:
+    from .domain import aggregate_status, normalize_status, trigger_type
+except ImportError:  # Docker runs this module as top-level `main`.
+    from domain import aggregate_status, normalize_status, trigger_type
+
 
 app = FastAPI(
     title="Modern Data Platform Observability API",
@@ -57,19 +62,61 @@ def fetch_one(query: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | None
     return rows[0] if rows else None
 
 
-def normalize_status(value: str | None) -> str:
-    status = (value or "not_started").lower()
-    if status in {"success", "pass", "passed"}:
-        return "success"
-    if status in {"warn", "warning"}:
-        return "warning"
-    if status in {"error", "fail", "failed", "runtime error"}:
-        return "failed"
-    if status in {"running", "started"}:
-        return "running"
-    if status == "blocked":
-        return "blocked"
-    return "not_started"
+def dataset_dbt_stages(run_id: str, dataset: str) -> dict[str, str]:
+    manifest_rows = fetch_all(
+        """
+        select node_unique_id, node_name, resource_type, layer, depends_on
+        from observability.dbt_manifest_nodes where orchestrator_run_id = %s
+        """,
+        (run_id,),
+    )
+    result_rows = fetch_all(
+        """
+        select n.node_unique_id, n.status
+        from observability.dbt_node_results n
+        join observability.dbt_runs r using (invocation_id)
+        where r.orchestrator_run_id = %s
+        """,
+        (run_id,),
+    )
+    source_ids = {
+        row["node_unique_id"] for row in manifest_rows
+        if row.get("resource_type") == "source"
+        and row.get("node_name") == dataset.split(".")[-1]
+    }
+    descendants = set(source_ids)
+    changed = True
+    while changed:
+        changed = False
+        for row in manifest_rows:
+            dependencies = set(row.get("depends_on") or [])
+            if row["node_unique_id"] not in descendants and dependencies & descendants:
+                descendants.add(row["node_unique_id"])
+                changed = True
+    results: dict[str, list[str]] = {}
+    for row in result_rows:
+        results.setdefault(row["node_unique_id"], []).append(row["status"])
+    output: dict[str, str] = {}
+    previous = "success"
+    for layer in ("staging", "intermediate", "analytics"):
+        applicable = [
+            row["node_unique_id"] for row in manifest_rows
+            if row.get("resource_type") == "model"
+            and row.get("layer") == layer
+            and row["node_unique_id"] in descendants
+        ]
+        if not applicable:
+            value = "not_applicable"
+        else:
+            evidence = [status for node_id in applicable for status in results.get(node_id, [])]
+            value = aggregate_status(evidence, bool(evidence))
+            if value == "not_started" and previous in {"failed", "blocked"}:
+                value = "blocked"
+        output[layer] = value
+        if value != "not_applicable":
+            previous = value
+    output["powerbi"] = "unmonitored" if output["analytics"] != "not_applicable" else "not_applicable"
+    return output
 
 
 @app.get("/health")
@@ -129,9 +176,8 @@ def platform_status() -> dict[str, Any]:
     freshness = fetch_one(
         """
         select max(snapshotted_at) as snapshotted_at,
-               max(age_seconds) as max_age_seconds,
-               count(*) filter (where status = 'pass') as healthy,
-               count(*) as total
+               max(age_seconds) filter (where freshness_type = 'technical') as technical_age_seconds,
+               max(max_loaded_at) filter (where freshness_type = 'business') as business_event_at
         from observability.source_freshness_results
         where invocation_id = (
             select invocation_id from observability.source_freshness_runs
@@ -140,6 +186,22 @@ def platform_status() -> dict[str, Any]:
         )
         """,
         (target_run_id, target_run_id),
+    )
+    last_success = fetch_one(
+        """
+        select run_id, finished_at from observability.pipeline_runs
+        where status = 'success' and finished_at is not null
+        order by finished_at desc limit 1
+        """
+    )
+    layer_rows = fetch_all(
+        """
+        select n.layer, n.status
+        from observability.dbt_node_results n
+        join observability.dbt_runs r using (invocation_id)
+        where r.orchestrator_run_id = %s and n.layer is not null
+        """,
+        (target_run_id,),
     )
 
     dbt_status = normalize_status(latest_dbt.get("status") if latest_dbt else None)
@@ -163,37 +225,58 @@ def platform_status() -> dict[str, Any]:
     source_status = ingestion_status if latest_ingestion and latest_ingestion.get("source_complete") else ("failed" if ingestion_status == "failed" else "not_started")
     minio_status = ingestion_status if latest_ingestion and latest_ingestion.get("minio_complete") else ("blocked" if source_status == "failed" else "not_started")
     raw_status = ingestion_status if latest_ingestion and latest_ingestion.get("raw_complete") else ("blocked" if minio_status in {"failed", "blocked"} else "not_started")
-    dbt_visual = (
-        "blocked"
-        if raw_status in {"failed", "blocked", "not_started"}
-        or (overall == "failed" and dbt_status == "not_started")
-        else dbt_status
+    layer_statuses: dict[str, list[str]] = {key: [] for key in ("staging", "intermediate", "analytics")}
+    for row in layer_rows:
+        if row.get("layer") in layer_statuses:
+            layer_statuses[row["layer"]].append(row.get("status") or "not_started")
+    previous = raw_status
+    canonical_stages = [
+        {"id": "source", "label": "Origem", "status": source_status},
+        {"id": "minio", "label": "MinIO", "status": minio_status},
+        {"id": "raw", "label": "Raw", "status": raw_status},
+    ]
+    for layer, label in (("staging", "Staging"), ("intermediate", "Intermediate"), ("analytics", "Analytics")):
+        value = aggregate_status(layer_statuses[layer], bool(layer_statuses[layer]))
+        if value == "not_started" and previous in {"failed", "blocked"}:
+            value = "blocked"
+        canonical_stages.append({"id": layer, "label": label, "status": value})
+        previous = value
+    canonical_stages.append({"id": "powerbi", "label": "Power BI", "status": "unmonitored"})
+    critical_statuses = [stage["status"] for stage in canonical_stages if stage["id"] != "powerbi"]
+    if pipeline_status == "failed" or "failed" in critical_statuses:
+        overall = "failed"
+    elif pipeline_status == "running" or "running" in critical_statuses:
+        overall = "running"
+    elif any(status in {"warning", "blocked"} for status in critical_statuses):
+        overall = "warning"
+    elif critical_statuses and all(status in {"success", "not_applicable"} for status in critical_statuses):
+        overall = "success"
+    else:
+        overall = "not_started"
+    dataset_names = fetch_all(
+        "select source_table as dataset from observability.ingestion_runs where run_id = %s",
+        (target_run_id,),
+    ) if target_run_id else []
+    impacted_datasets = sum(
+        "failed" in dataset_dbt_stages(target_run_id, row["dataset"]).values()
+        for row in dataset_names
     )
-    mart_status = "blocked" if dbt_visual in {"failed", "blocked"} else ("success" if dbt_visual == "success" else "not_started")
 
     return {
         "platform_status": overall,
         "run_id": run_id,
-        "last_successful_run": (
-            latest_pipeline.get("finished_at") if latest_pipeline and overall == "success" else
-            latest_ingestion.get("finished_at") if latest_ingestion and overall == "success" else None
-        ),
+        "trigger_type": trigger_type(run_id),
+        "last_successful_run": last_success.get("finished_at") if last_success else None,
         "pipeline_duration_seconds": float(latest_pipeline.get("duration_seconds") or 0) if latest_pipeline else sum(filter(None, [
             float(latest_ingestion.get("duration_seconds") or 0) if latest_ingestion else 0,
             float(latest_dbt.get("elapsed_seconds") or 0) if latest_dbt else 0,
         ])),
-        "freshness_seconds": float(freshness.get("max_age_seconds") or 0) if freshness else None,
+        "technical_freshness_seconds": float(freshness["technical_age_seconds"]) if freshness and freshness.get("technical_age_seconds") is not None else None,
+        "last_business_event_at": freshness.get("business_event_at") if freshness else None,
         "tests": {"passed": tests_total - tests_failed, "total": tests_total},
         "failed_pipelines": 1 if overall == "failed" else 0,
-        "datasets_impacted": tests_failed,
-        "stages": [
-            {"id": "source", "label": "Source", "status": source_status},
-            {"id": "minio", "label": "MinIO", "status": minio_status},
-            {"id": "raw", "label": "Raw", "status": raw_status},
-            {"id": "dbt", "label": "dbt", "status": dbt_visual},
-            {"id": "mart", "label": "Mart", "status": mart_status},
-            {"id": "powerbi", "label": "Power BI", "status": "blocked" if mart_status in {"failed", "blocked"} else "not_started"},
-        ],
+        "datasets_impacted": impacted_datasets,
+        "stages": canonical_stages,
     }
 
 
@@ -217,28 +300,41 @@ def pipelines() -> list[dict[str, str]]:
 def pipeline_runs(pipeline: str, limit: int = Query(20, ge=1, le=100)) -> list[dict[str, Any]]:
     if pipeline != "adventureworks":
         raise HTTPException(status_code=404, detail="Pipeline não encontrado")
-    return fetch_all(
+    rows = fetch_all(
         """
-        select run_id, min(started_at) as started_at, max(finished_at) as finished_at,
-               sum(duration_seconds) as duration_seconds,
-               case when bool_and(status = 'success') then 'success' else 'failed' end as status,
-               count(*) as dataset_count
-        from observability.ingestion_runs
-        group by run_id order by min(started_at) desc limit %s
+        select p.run_id, p.started_at, p.finished_at, p.duration_seconds,
+               p.status, p.error_message, count(i.source_table) as dataset_count
+        from observability.pipeline_runs p
+        left join observability.ingestion_runs i using (run_id)
+        group by p.run_id, p.started_at, p.finished_at, p.duration_seconds,
+                 p.status, p.error_message
+        order by p.started_at desc limit %s
         """,
         (limit,),
     )
+    for row in rows:
+        row["trigger_type"] = trigger_type(row.get("run_id"))
+    return rows
 
 
 @app.get("/api/runs/{run_id}")
 def run_detail(run_id: str) -> dict[str, Any]:
     datasets = run_datasets(run_id)
-    if not datasets:
+    pipeline = fetch_one(
+        "select * from observability.pipeline_runs where run_id = %s",
+        (run_id,),
+    )
+    if not datasets and not pipeline:
         raise HTTPException(status_code=404, detail="Execução não encontrada")
     failed = [row for row in datasets if row["status"] == "failed"]
     return {
         "run_id": run_id,
-        "status": "failed" if failed else "success",
+        "started_at": pipeline.get("started_at") if pipeline else None,
+        "finished_at": pipeline.get("finished_at") if pipeline else None,
+        "duration_seconds": pipeline.get("duration_seconds") if pipeline else None,
+        "trigger_type": trigger_type(run_id),
+        "status": normalize_status(pipeline.get("status") if pipeline else ("failed" if failed else "success")),
+        "error_message": pipeline.get("error_message") if pipeline else None,
         "datasets": datasets,
         "affected_datasets": [row["dataset"] for row in failed],
     }
@@ -263,8 +359,7 @@ def run_datasets(run_id: str) -> list[dict[str, Any]]:
             "source": status,
             "minio": status if row.get("minio_uploaded_at") else "not_started",
             "raw": status if row.get("raw_loaded_at") else "not_started",
-            "dbt": "not_started",
-            "mart": "not_started",
+            **dataset_dbt_stages(run_id, row["dataset"]),
         }
     return rows
 
@@ -313,7 +408,15 @@ def dataset_detail(dataset: str) -> dict[str, Any]:
     )
     if not ingestion and not freshness and not tests:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
-    return {"dataset": dataset, "ingestion": ingestion, "freshness": freshness, "tests": tests}
+    ingestion_status = normalize_status(ingestion.get("status") if ingestion else None)
+    stages = {
+        "source": ingestion_status,
+        "minio": ingestion_status if ingestion and ingestion.get("minio_uploaded_at") else "not_started",
+        "raw": ingestion_status if ingestion and ingestion.get("raw_loaded_at") else "not_started",
+    }
+    if ingestion and ingestion.get("run_id"):
+        stages.update(dataset_dbt_stages(ingestion["run_id"], ingestion["source_table"]))
+    return {"dataset": dataset, "ingestion": ingestion, "freshness": freshness, "tests": tests, "stages": stages}
 
 
 @app.get("/api/datasets/{dataset}/history")
@@ -356,8 +459,9 @@ def freshness() -> list[dict[str, Any]]:
 def data_quality() -> dict[str, Any]:
     results = fetch_all(
         """
-        select test_name, test_type, status, failures as failed_records,
-               execution_seconds, message, depends_on, owner_group, owner_name, owner_email
+        select invocation_id, test_unique_id, test_name, test_type, severity,
+               status, failures as failed_records, execution_seconds, message,
+               depends_on, owner_group, owner_name, owner_email
         from observability.dbt_test_results
         where invocation_id in (
             select invocation_id from observability.dbt_runs
@@ -369,7 +473,16 @@ def data_quality() -> dict[str, Any]:
         ) order by status desc, test_name
         """
     )
+    latest_run = fetch_one(
+        """
+        select generated_at, collected_at, orchestrator_run_id
+        from observability.dbt_runs where orchestrator_run_id is not null
+        order by collected_at desc limit 1
+        """
+    )
     return {
+        "last_run_at": (latest_run or {}).get("generated_at") or (latest_run or {}).get("collected_at"),
+        "run_id": (latest_run or {}).get("orchestrator_run_id"),
         "total": len(results),
         "passed": sum(normalize_status(row.get("status")) == "success" for row in results),
         "warnings": sum(normalize_status(row.get("status")) == "warning" for row in results),
@@ -378,13 +491,26 @@ def data_quality() -> dict[str, Any]:
     }
 
 
+@app.get("/api/data-quality/{invocation_id}/{test_unique_id}/evidence")
+def quality_evidence(invocation_id: str, test_unique_id: str) -> list[dict[str, Any]]:
+    return fetch_all(
+        """
+        select captured_at, failure_record
+        from observability.dbt_test_failure_details
+        where invocation_id = %s and test_unique_id = %s
+        order by captured_at desc limit 100
+        """,
+        (invocation_id, test_unique_id),
+    )
+
+
 @app.get("/api/incidents")
 def incidents() -> list[dict[str, Any]]:
     return fetch_all(
         """
-        select run_id, finished_at as occurred_at,
+        select run_id, finished_at as occurred_at, 'ingestion'::text as origin,
                'Ingestion: ' || source_table as test_name,
-               status, null::bigint as invalid_records,
+               'error'::text as severity, status, null::bigint as invalid_records,
                error_message as error,
                to_jsonb(array[source_table]) as depends_on,
                null::text as owner_name, null::text as owner_email
@@ -392,7 +518,8 @@ def incidents() -> list[dict[str, Any]]:
         where status = 'failed'
         union all
         select r.orchestrator_run_id as run_id, r.collected_at as occurred_at,
-               t.test_name, t.status, t.failures as invalid_records,
+               'dbt_test'::text as origin, t.test_name, t.severity, t.status,
+               t.failures as invalid_records,
                t.message as error, t.depends_on, t.owner_name, t.owner_email
         from observability.dbt_test_results t
         join observability.dbt_runs r using (invocation_id)

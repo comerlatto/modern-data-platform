@@ -1,4 +1,4 @@
-export type Status = "success" | "running" | "warning" | "failed" | "blocked" | "not_started";
+export type Status = "success" | "running" | "warning" | "failed" | "blocked" | "not_started" | "not_applicable" | "unmonitored";
 
 export interface Stage {
   id: string;
@@ -11,9 +11,11 @@ export interface Stage {
 export interface PlatformStatus {
   platform_status: Status;
   run_id: string | null;
+  trigger_type: "manual" | "scheduled" | "other" | null;
   last_successful_run: string | null;
   pipeline_duration_seconds: number;
-  freshness_seconds: number | null;
+  technical_freshness_seconds: number | null;
+  last_business_event_at: string | null;
   tests: { passed: number; total: number };
   failed_pipelines: number;
   datasets_impacted: number;

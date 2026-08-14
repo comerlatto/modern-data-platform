@@ -63,6 +63,7 @@ def create_observability_tables(connection: psycopg.Connection[Any]) -> None:
             test_unique_id text not null,
             test_name text not null,
             test_type text not null,
+            severity text not null default 'error',
             status text not null,
             failures integer,
             execution_seconds numeric,
@@ -77,6 +78,9 @@ def create_observability_tables(connection: psycopg.Connection[Any]) -> None:
 
         alter table {SCHEMA}.dbt_test_results
             add column if not exists owner_group text;
+
+        alter table {SCHEMA}.dbt_test_results
+            add column if not exists severity text not null default 'error';
 
         alter table {SCHEMA}.dbt_test_results
             add column if not exists owner_name text;
@@ -100,6 +104,34 @@ def create_observability_tables(connection: psycopg.Connection[Any]) -> None:
 
         create index if not exists idx_dbt_failure_details_test
             on {SCHEMA}.dbt_test_failure_details(test_unique_id, captured_at);
+
+        create table if not exists {SCHEMA}.dbt_manifest_nodes (
+            orchestrator_run_id text not null,
+            node_unique_id text not null,
+            node_name text not null,
+            resource_type text not null,
+            layer text,
+            depends_on jsonb not null,
+            primary key (orchestrator_run_id, node_unique_id)
+        );
+
+        create table if not exists {SCHEMA}.dbt_node_results (
+            invocation_id text not null references {SCHEMA}.dbt_runs(invocation_id),
+            node_unique_id text not null,
+            node_name text not null,
+            resource_type text not null,
+            layer text,
+            status text not null,
+            execution_seconds numeric,
+            message text,
+            primary key (invocation_id, node_unique_id)
+        );
+
+        create index if not exists idx_dbt_manifest_nodes_run
+            on {SCHEMA}.dbt_manifest_nodes(orchestrator_run_id, layer);
+
+        create index if not exists idx_dbt_node_results_status
+            on {SCHEMA}.dbt_node_results(status);
     """
     connection.execute(ddl)
 
@@ -122,6 +154,86 @@ def execution_status(results: list[dict[str, Any]]) -> str:
 def integer_or_none(value: Any) -> int | None:
     if value is None or isinstance(value, bool):
         return None
+
+
+def node_layer(node: dict[str, Any]) -> str | None:
+    path = str(node.get("original_file_path") or "").replace("\\", "/")
+    for layer in ("staging", "intermediate", "analytics"):
+        if f"models/{layer}/" in path:
+            return layer
+    return None
+
+
+def persist_manifest_nodes(
+    connection: psycopg.Connection[Any],
+    manifest: dict[str, Any],
+    orchestrator_run_id: str | None,
+) -> None:
+    if not orchestrator_run_id:
+        return
+    resources = {**manifest.get("sources", {}), **manifest.get("nodes", {})}
+    for unique_id, node in resources.items():
+        resource_type = str(node.get("resource_type") or "")
+        if resource_type not in {"source", "model"}:
+            continue
+        connection.execute(
+            f"""
+            insert into {SCHEMA}.dbt_manifest_nodes (
+                orchestrator_run_id, node_unique_id, node_name,
+                resource_type, layer, depends_on
+            ) values (%s, %s, %s, %s, %s, %s)
+            on conflict (orchestrator_run_id, node_unique_id) do update set
+                node_name = excluded.node_name,
+                resource_type = excluded.resource_type,
+                layer = excluded.layer,
+                depends_on = excluded.depends_on
+            """,
+            (
+                orchestrator_run_id,
+                unique_id,
+                node.get("name", unique_id),
+                resource_type,
+                node_layer(node),
+                Jsonb(node.get("depends_on", {}).get("nodes", [])),
+            ),
+        )
+
+
+def persist_node_results(
+    connection: psycopg.Connection[Any],
+    invocation_id: str,
+    manifest: dict[str, Any],
+    results: list[dict[str, Any]],
+) -> None:
+    nodes = manifest.get("nodes", {})
+    for result in results:
+        unique_id = result.get("unique_id")
+        node = nodes.get(unique_id, {})
+        resource_type = node.get("resource_type")
+        if resource_type != "model":
+            continue
+        connection.execute(
+            f"""
+            insert into {SCHEMA}.dbt_node_results (
+                invocation_id, node_unique_id, node_name, resource_type,
+                layer, status, execution_seconds, message
+            ) values (%s, %s, %s, %s, %s, %s, %s, %s)
+            on conflict (invocation_id, node_unique_id) do update set
+                status = excluded.status,
+                execution_seconds = excluded.execution_seconds,
+                message = excluded.message
+            """,
+            (
+                invocation_id,
+                unique_id,
+                node.get("name", unique_id),
+                resource_type,
+                node_layer(node),
+                result.get("status", "unknown"),
+                result.get("execution_time"),
+                result.get("message"),
+            ),
+        )
     try:
         return int(value)
     except (TypeError, ValueError):
@@ -179,7 +291,7 @@ def persist_run(
         1
         for result in test_results
         if str(result.get("status", "")).lower()
-        in {"error", "fail", "failed", "runtime error", "warn", "warning"}
+        in {"error", "fail", "failed", "runtime error"}
     )
 
     connection.execute(
@@ -248,6 +360,7 @@ def persist_test_results(
                 test_unique_id,
                 test_name,
                 test_type,
+                severity,
                 status,
                 failures,
                 execution_seconds,
@@ -258,10 +371,11 @@ def persist_test_results(
                 owner_name,
                 owner_email
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             on conflict (invocation_id, test_unique_id) do update set
                 test_name = excluded.test_name,
                 test_type = excluded.test_type,
+                severity = excluded.severity,
                 status = excluded.status,
                 failures = excluded.failures,
                 execution_seconds = excluded.execution_seconds,
@@ -277,6 +391,7 @@ def persist_test_results(
                 unique_id,
                 node.get("name", unique_id),
                 test_type,
+                node.get("config", {}).get("severity", "error"),
                 result.get("status", "unknown"),
                 integer_or_none(result.get("failures")),
                 result.get("execution_time"),
@@ -403,6 +518,13 @@ def main() -> None:
             run_results,
             test_results,
             args.orchestrator_run_id,
+        )
+        persist_manifest_nodes(connection, manifest, args.orchestrator_run_id)
+        persist_node_results(
+            connection,
+            invocation_id,
+            manifest,
+            run_results.get("results", []),
         )
         persist_test_results(connection, invocation_id, manifest, test_results)
         captured_rows = persist_failure_details(

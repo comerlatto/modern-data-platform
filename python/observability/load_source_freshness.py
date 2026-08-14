@@ -57,6 +57,7 @@ def create_tables(connection: psycopg.Connection[Any]) -> None:
             source_unique_id text not null,
             source_name text,
             table_name text,
+            freshness_type text not null default 'technical',
             status text not null,
             max_loaded_at timestamptz,
             snapshotted_at timestamptz,
@@ -66,6 +67,9 @@ def create_tables(connection: psycopg.Connection[Any]) -> None:
             error_message text,
             primary key (invocation_id, source_unique_id)
         );
+
+        alter table {SCHEMA}.source_freshness_results
+            add column if not exists freshness_type text not null default 'technical';
 
         create index if not exists idx_source_freshness_status
             on {SCHEMA}.source_freshness_results(status, snapshotted_at);
@@ -96,6 +100,7 @@ def persist_freshness(
     connection: psycopg.Connection[Any],
     artifact: dict[str, Any],
     orchestrator_run_id: str | None,
+    source_types: dict[str, str] | None = None,
 ) -> tuple[str, int]:
     metadata = artifact.get("metadata", {})
     results = artifact.get("results", [])
@@ -159,6 +164,7 @@ def persist_freshness(
                 source_unique_id,
                 source_name,
                 table_name,
+                freshness_type,
                 status,
                 max_loaded_at,
                 snapshotted_at,
@@ -167,10 +173,11 @@ def persist_freshness(
                 execution_seconds,
                 error_message
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             on conflict (invocation_id, source_unique_id) do update set
                 source_name = excluded.source_name,
                 table_name = excluded.table_name,
+                freshness_type = excluded.freshness_type,
                 status = excluded.status,
                 max_loaded_at = excluded.max_loaded_at,
                 snapshotted_at = excluded.snapshotted_at,
@@ -184,6 +191,7 @@ def persist_freshness(
                 unique_id,
                 source_name,
                 table_name,
+                (source_types or {}).get(unique_id, "technical"),
                 result.get("status", "unknown"),
                 result.get("max_loaded_at"),
                 result.get("snapshotted_at"),
@@ -211,12 +219,23 @@ def main() -> None:
     with artifact_path.open(encoding="utf-8") as file:
         artifact = json.load(file)
 
+    manifest_path = args.target_path / "manifest.json"
+    source_types: dict[str, str] = {}
+    if manifest_path.exists():
+        with manifest_path.open(encoding="utf-8") as file:
+            manifest = json.load(file)
+        source_types = {
+            unique_id: str(node.get("meta", {}).get("freshness_type", "technical"))
+            for unique_id, node in manifest.get("sources", {}).items()
+        }
+
     with psycopg.connect(connection_string()) as connection:
         create_tables(connection)
         status, result_count = persist_freshness(
             connection,
             artifact,
             args.orchestrator_run_id,
+            source_types,
         )
 
     print(

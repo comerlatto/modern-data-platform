@@ -1,47 +1,36 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  Activity, AlertTriangle, ArrowDown, Check, ChevronRight, Clock3,
+  Activity, AlertTriangle, ArrowDown, Check, Clock3,
   Database, Gauge, HardDrive, Menu, RefreshCw, Search, ShieldCheck,
-  TestTube2, X, XCircle,
+  X,
 } from "lucide-react";
 import { api } from "./api";
+import { duration, formatDate, number, relativeDuration } from "./formatters";
 import type { DatasetRun, PlatformStatus, Stage, Status } from "./types";
 
 type Page = "overview" | "runs" | "freshness" | "quality" | "incidents";
 
 const labels: Record<Page, string> = {
-  overview: "Platform Overview",
-  runs: "Pipeline Runs",
-  freshness: "Data Freshness",
-  quality: "Data Quality",
-  incidents: "Incidents",
+  overview: "Visão geral",
+  runs: "Execuções",
+  freshness: "Atualização dos dados",
+  quality: "Qualidade dos dados",
+  incidents: "Incidentes",
 };
 
 const statusLabel: Record<Status, string> = {
-  success: "Healthy",
-  running: "Running",
-  warning: "Warning",
-  failed: "Failed",
-  blocked: "Blocked",
-  not_started: "Not started",
+  success: "Saudável",
+  running: "Em execução",
+  warning: "Atenção",
+  failed: "Com falha",
+  blocked: "Bloqueada",
+  not_started: "Sem evidência",
+  not_applicable: "Não aplicável",
+  unmonitored: "Sem monitoramento",
 };
 
-function formatDate(value: unknown) {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  }).format(new Date(String(value)));
-}
-
-function duration(value: unknown) {
-  const seconds = Math.round(Number(value || 0));
-  if (!seconds) return "—";
-  return seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`;
-}
-
-function number(value: unknown) {
-  return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
+function triggerLabel(value: unknown) {
+  return value === "manual" ? "Execução manual" : value === "scheduled" ? "Execução agendada" : "Outro disparo";
 }
 
 function StatusMark({ status, compact = false }: { status: Status; compact?: boolean }) {
@@ -50,12 +39,13 @@ function StatusMark({ status, compact = false }: { status: Status; compact?: boo
     ["error", "fail", "failed", "runtime error"].includes(value) ? "failed" :
     ["warn", "warning"].includes(value) ? "warning" :
     ["running", "started"].includes(value) ? "running" :
-    value === "blocked" ? "blocked" :
+    value === "blocked" ? "blocked" : value === "not_applicable" ? "not_applicable" :
+    value === "unmonitored" ? "unmonitored" :
     value === "success" ? "success" : "not_started";
   const Icon = normalized === "success" ? Check : normalized === "failed" ? X :
     normalized === "warning" ? AlertTriangle : normalized === "running" ? RefreshCw : Clock3;
   return (
-    <span className={`status status--${normalized} ${compact ? "status--compact" : ""}`}>
+    <span className={`status status--${normalized} ${compact ? "status--compact" : ""}`} title={statusLabel[normalized]} aria-label={statusLabel[normalized]}>
       <Icon size={compact ? 13 : 16} /> {!compact && statusLabel[normalized]}
     </span>
   );
@@ -74,18 +64,17 @@ function Metric({ eyebrow, value, note, accent }: { eyebrow: string; value: stri
   );
 }
 
-function Tracker({ stages, onSelect }: { stages: Stage[]; onSelect: (stage: Stage) => void }) {
+function Tracker({ stages }: { stages: Stage[] }) {
   return (
     <div className="tracker" aria-label="Etapas da execução">
       {stages.map((stage, index) => (
         <div className="tracker__segment" key={stage.id}>
-          <button className={`stage stage--${stage.status}`} onClick={() => onSelect(stage)}>
+          <article className={`stage stage--${stage.status}`}>
             <span className="stage__number">0{index + 1}</span>
             <span className="stage__icon"><StatusMark status={stage.status} compact /></span>
             <strong>{stage.label}</strong>
             <small>{statusLabel[stage.status]}</small>
-            <ChevronRight className="stage__open" size={16} />
-          </button>
+          </article>
           {index < stages.length - 1 && <div className="tracker__line" />}
         </div>
       ))}
@@ -123,20 +112,20 @@ function DatasetTable({ rows, onSelect }: { rows: DatasetRun[]; onSelect: (datas
   return (
     <section className="section-block">
       <header className="section-heading">
-        <div><p className="kicker">Dataset register</p><h2>Jornada por dataset</h2></div>
-        <span>{filtered.length.toString().padStart(2, "0")} registros</span>
+        <div><p className="kicker">Ativos monitorados</p><h2>Jornada por dataset</h2></div>
+        <span>{number(filtered.length)} registros</span>
       </header>
       <div className="filters">
         <label><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filtrar dataset" /></label>
         <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filtrar status">
-          <option value="all">Todos os status</option><option value="success">Healthy</option><option value="failed">Failed</option>
+          <option value="all">Todos os status</option><option value="success">Saudável</option><option value="warning">Atenção</option><option value="failed">Com falha</option>
         </select>
       </div>
       {!filtered.length ? <Empty>Nenhum dataset registrado nesta execução.</Empty> : (
-        <div className="table-wrap"><table><thead><tr><th>Dataset</th><th>Source</th><th>MinIO</th><th>Raw</th><th>dbt</th><th>Mart</th><th>Rows</th><th>Status</th></tr></thead>
+        <div className="table-wrap"><table><thead><tr><th>Dataset</th><th>Origem</th><th>MinIO</th><th>Raw</th><th>Staging</th><th>Intermediate</th><th>Analytics</th><th>Power BI</th><th>Linhas</th><th>Status</th></tr></thead>
           <tbody>{filtered.map((row) => <tr key={row.dataset}>
             <td><button className="dataset-link" onClick={() => onSelect(row.dataset)}><strong>{row.dataset}</strong><small>{row.minio_object || "sem objeto"}</small></button></td>
-            {(["source", "minio", "raw", "dbt", "mart"] as const).map((stage) => <td key={stage}><StatusMark status={row.stages?.[stage] || "not_started"} compact /></td>)}
+            {(["source", "minio", "raw", "staging", "intermediate", "analytics", "powerbi"] as const).map((stage) => <td key={stage}><StatusMark status={row.stages?.[stage] || "not_started"} compact /></td>)}
             <td>{number(row.raw_row_count)}</td><td><StatusMark status={row.status} /></td>
           </tr>)}</tbody></table></div>
       )}
@@ -147,92 +136,137 @@ function DatasetTable({ rows, onSelect }: { rows: DatasetRun[]; onSelect: (datas
 function DatasetPanel({ data, onClose }: { data: Record<string, unknown>; onClose: () => void }) {
   const ingestion = (data.ingestion || {}) as Record<string, unknown>;
   const freshness = (data.freshness || {}) as Record<string, unknown>;
-  const tests = (data.tests || []) as Record<string, unknown>[];
-  const succeeded = ingestion.status === "success";
+  const stages = (data.stages || {}) as Record<string, Status>;
   const journey: [string, Status, string][] = [
-    ["Source", succeeded ? "success" : "failed", `${number(ingestion.source_row_count)} rows`],
-    ["MinIO", ingestion.minio_uploaded_at ? "success" : "not_started", String(ingestion.minio_object || "No object")],
-    ["Raw", ingestion.raw_loaded_at ? "success" : "not_started", `${number(ingestion.raw_row_count)} rows`],
-    ["dbt", tests.some((test) => ["error", "fail", "failed"].includes(String(test.status))) ? "failed" : tests.length ? "success" : "not_started", `${tests.length} tests`],
-    ["Mart", tests.length ? "success" : "not_started", "Analytics interface"],
+    ["Origem", stages.source || "not_started", `${number(ingestion.source_row_count)} linhas`],
+    ["MinIO", stages.minio || "not_started", String(ingestion.minio_object || "Sem objeto")],
+    ["Raw", stages.raw || "not_started", `${number(ingestion.raw_row_count)} linhas`],
+    ["Staging", stages.staging || "not_started", "Transformação dbt"],
+    ["Intermediate", stages.intermediate || "not_started", "Transformação dbt"],
+    ["Analytics", stages.analytics || "not_started", "Transformação dbt"],
+    ["Power BI", stages.powerbi || "unmonitored", "Sem telemetria de atualização"],
   ];
   return <div className="scrim" onMouseDown={onClose}><aside className="panel dataset-panel" onMouseDown={(e) => e.stopPropagation()}>
     <button className="icon-button panel__close" onClick={onClose}><X /></button>
-    <p className="kicker">Dataset journey / latest evidence</p><h2>{String(data.dataset)}</h2>
+    <p className="kicker">Jornada do dataset / evidência mais recente</p><h2>{String(data.dataset)}</h2>
     <div className="dataset-journey">{journey.map(([label, status, note], index) => <div key={label}><article><StatusMark status={status} compact /><span><strong>{label}</strong><small>{note}</small></span></article>{index < journey.length - 1 && <ArrowDown />}</div>)}</div>
-    <dl className="definition-list"><div><dt>Freshness</dt><dd>{duration(freshness.age_seconds)}</dd></div><div><dt>Last successful load</dt><dd>{formatDate(ingestion.finished_at)}</dd></div><div><dt>Parquet size</dt><dd>{ingestion.file_size_bytes ? `${(Number(ingestion.file_size_bytes) / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div></dl>
+    <dl className="definition-list"><div><dt>{freshness.freshness_type === "business" ? "Idade do último evento" : "Atualização técnica"}</dt><dd>{relativeDuration(freshness.age_seconds)}</dd></div><div><dt>Última carga</dt><dd>{formatDate(ingestion.finished_at)}</dd></div><div><dt>Tamanho do Parquet</dt><dd>{ingestion.file_size_bytes ? `${(Number(ingestion.file_size_bytes) / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div></dl>
   </aside></div>;
 }
 
 function Overview() {
   const [data, setData] = useState<PlatformStatus | null>(null);
   const [datasets, setDatasets] = useState<DatasetRun[]>([]);
-  const [selected, setSelected] = useState<Stage | null>(null);
   const [selectedDataset, setSelectedDataset] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
-  const load = () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [consultedAt, setConsultedAt] = useState<Date | null>(null);
+  const load = async (announce = false) => {
+    if (refreshing) return;
+    setRefreshing(true);
     setError("");
-    api.status().then((result) => {
+    setFeedback("");
+    try {
+      const result = await api.status();
       setData(result);
-      if (result.run_id) api.runDatasets(result.run_id).then(setDatasets).catch(() => setDatasets([]));
-    }).catch(() => setError("A API de observabilidade não está respondendo."));
+      setDatasets(result.run_id ? await api.runDatasets(result.run_id) : []);
+      setConsultedAt(new Date());
+      if (announce) setFeedback("Dados atualizados com sucesso.");
+    } catch {
+      setError("A API de observabilidade não está respondendo.");
+      if (announce) setFeedback("Não foi possível atualizar os dados.");
+    } finally {
+      setRefreshing(false);
+    }
   };
-  useEffect(load, []);
+  useEffect(() => { void load(); }, []);
   if (error) return <Empty>{error} Verifique o serviço na porta 8000.</Empty>;
   if (!data) return <div className="loading"><RefreshCw /> Consolidando sinais da plataforma…</div>;
   return <>
     <section className="hero">
       <div><p className="kicker">Morning edition / operational brief</p><h1>Modern Data<br /><em>Platform</em></h1></div>
-      <div className={`health health--${data.platform_status}`}><span>Platform status</span><strong>{statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks / {data.run_id || "sem execução"}</small></div>
+      <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><strong>{statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
     </section>
     <div className="metrics">
-      <Metric eyebrow="Last successful run" value={formatDate(data.last_successful_run)} note="Última carga observada" />
-      <Metric eyebrow="Pipeline duration" value={duration(data.pipeline_duration_seconds)} note="Ingestão + transformação" />
-      <Metric eyebrow="Data freshness" value={duration(data.freshness_seconds)} note="Maior idade registrada" />
-      <Metric eyebrow="dbt tests" value={`${data.tests.passed} / ${data.tests.total}`} note="Testes aprovados" />
-      <Metric eyebrow="Datasets impacted" value={String(data.datasets_impacted)} note="Exigem investigação" accent={data.datasets_impacted > 0} />
+      <Metric eyebrow="Última execução bem-sucedida" value={formatDate(data.last_successful_run)} note="Horário de Brasília" />
+      <Metric eyebrow="Duração do pipeline" value={duration(data.pipeline_duration_seconds)} note="Ingestão + transformação" />
+      <Metric eyebrow="Atualização técnica" value={relativeDuration(data.technical_freshness_seconds)} note="Carga das fontes cadastrais" />
+      <Metric eyebrow="Último dado comercial" value={formatDate(data.last_business_event_at)} note="Evento mais recente na origem" />
+      <Metric eyebrow="Testes dbt" value={`${number(data.tests.passed)} / ${number(data.tests.total)}`} note="Testes aprovados" accent={data.datasets_impacted > 0} />
     </div>
     <section className="section-block tracker-block">
-      <header className="section-heading"><div><p className="kicker">Execution tracking / latest run</p><h2>Pipeline tracker</h2></div><button className="text-button" onClick={load}><RefreshCw size={15} /> Atualizar</button></header>
-      <Tracker stages={data.stages} onSelect={setSelected} />
+      <header className="section-heading"><div><p className="kicker">Acompanhamento / execução mais recente</p><h2>Jornada do pipeline</h2></div><div className="refresh-area"><button className="text-button" onClick={() => void load(true)} disabled={refreshing}><RefreshCw className={refreshing ? "spin" : ""} size={15} /> {refreshing ? "Atualizando…" : "Atualizar"}</button><small aria-live="polite">{feedback || (consultedAt ? `Última consulta: ${consultedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "")}</small></div></header>
+      <Tracker stages={data.stages} />
     </section>
     <DatasetTable rows={datasets} onSelect={(dataset) => api.dataset(dataset).then(setSelectedDataset)} />
-    {selected && <StagePanel stage={selected} onClose={() => setSelected(null)} />}
     {selectedDataset && <DatasetPanel data={selectedDataset} onClose={() => setSelectedDataset(null)} />}
   </>;
 }
 
 function Runs() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
-  useEffect(() => { api.runs().then(setRows).catch(() => setRows([])); }, []);
-  return <DataPage kicker="Archive / orchestration history" title="Pipeline Runs">
-    {!rows.length ? <Empty>Nenhuma execução de ingestão registrada.</Empty> : <div className="run-list">{rows.map((row, i) => <article key={String(row.run_id)}><span>{String(i + 1).padStart(2, "0")}</span><div><strong>{formatDate(row.started_at)}</strong><small>{String(row.run_id)}</small></div><StatusMark status={String(row.status) as Status} /><b>{duration(row.duration_seconds)}</b><ChevronRight /></article>)}</div>}
+  const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => { api.runs().then(setRows).catch(() => setError("Não foi possível consultar as execuções.")); }, []);
+  const open = async (runId: unknown) => {
+    setError("");
+    try { setSelected(await api.run(String(runId))); } catch { setError("Não foi possível abrir os detalhes da execução."); }
+  };
+  return <DataPage kicker="Histórico de orquestração" title="Execuções do pipeline">
+    {error && <p className="inline-error" role="alert">{error}</p>}
+    {!rows.length && !error ? <Empty>Nenhuma execução registrada.</Empty> : <div className="run-list" role="list">{rows.map((row, i) => <button type="button" role="listitem" key={String(row.run_id)} onClick={() => void open(row.run_id)}><span>{String(i + 1).padStart(2, "0")}</span><div><strong>{formatDate(row.started_at)}</strong><small>{triggerLabel(row.trigger_type)}</small></div><b><small>Duração</small>{duration(row.duration_seconds)}</b><StatusMark status={String(row.status) as Status} /><span className="details-label">Ver detalhes</span></button>)}</div>}
+    {selected && <RunPanel data={selected} onClose={() => setSelected(null)} />}
   </DataPage>;
+}
+
+function RunPanel({ data, onClose }: { data: Record<string, unknown>; onClose: () => void }) {
+  const datasets = (data.datasets || []) as DatasetRun[];
+  return <div className="scrim" onMouseDown={onClose}><aside className="panel dataset-panel" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Detalhes da execução">
+    <button className="icon-button panel__close" onClick={onClose} aria-label="Fechar"><X /></button>
+    <p className="kicker">Evidências da execução</p><h2>{formatDate(data.started_at)}</h2><StatusMark status={data.status as Status} />
+    <dl className="definition-list"><div><dt>Início</dt><dd>{formatDate(data.started_at)}</dd></div><div><dt>Término</dt><dd>{formatDate(data.finished_at)}</dd></div><div><dt>Tipo</dt><dd>{triggerLabel(data.trigger_type)}</dd></div><div><dt>Duração total</dt><dd>{duration(data.duration_seconds)}</dd></div></dl>
+    {data.error_message ? <p className="panel__note panel__note--error">{String(data.error_message)}</p> : null}
+    <h3>Datasets</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={dataset.status} /></li>)}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
+  </aside></div>;
 }
 
 function Freshness() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
-  useEffect(() => { api.freshness().then(setRows).catch(() => setRows([])); }, []);
-  return <DataPage kicker="SLA desk / latency by source" title="Data Freshness">
-    <EditorialTable rows={rows} columns={["dataset", "source_updated_at", "minio_updated_at", "warehouse_updated_at", "analytics_updated_at", "status"]} labels={["Dataset", "Source", "MinIO", "Warehouse", "Analytics", "Status"]} />
+  const [error, setError] = useState("");
+  useEffect(() => { api.freshness().then(setRows).catch(() => setError("Não foi possível consultar a atualização dos dados.")); }, []);
+  return <DataPage kicker="Latência técnica por fonte" title="Atualização dos dados">
+    {error ? <Empty>{error}</Empty> : <EditorialTable rows={rows} columns={["dataset", "source_updated_at", "minio_updated_at", "warehouse_updated_at", "analytics_updated_at", "status"]} labels={["Dataset", "Origem", "MinIO", "Warehouse", "Analytics", "Status"]} />}
   </DataPage>;
 }
 
 function Quality() {
   const [data, setData] = useState<Record<string, unknown> | null>(null);
-  useEffect(() => { api.quality().then(setData).catch(() => setData(null)); }, []);
+  const [error, setError] = useState("");
+  const [evidence, setEvidence] = useState<Record<string, unknown>[] | null>(null);
+  useEffect(() => { api.quality().then(setData).catch(() => setError("Não foi possível consultar os resultados dos testes dbt.")); }, []);
   const rows = (data?.results as Record<string, unknown>[] | undefined) || [];
-  return <DataPage kicker="Verification ledger / dbt" title="Data Quality">
-    <div className="quality-totals"><strong>{number(data?.total)}<small>tests</small></strong><span>{number(data?.passed)} passed</span><span>{number(data?.warnings)} warning</span><span className="coral">{number(data?.failed)} failed</span></div>
-    <EditorialTable rows={rows} columns={["test_name", "test_type", "failed_records", "status"]} labels={["Test", "Type", "Invalid records", "Result"]} />
+  const openEvidence = async (row: Record<string, unknown>) => {
+    try { setEvidence(await api.qualityEvidence(String(row.invocation_id), String(row.test_unique_id))); } catch { setError("Não foi possível consultar as evidências preservadas."); }
+  };
+  return <DataPage kicker="Resultados persistidos do dbt" title="Qualidade dos dados">
+    {error && <p className="inline-error" role="alert">{error}</p>}
+    <div className="quality-totals"><strong>{number(data?.total)}<small>testes</small></strong><span>{number(data?.passed)} aprovados</span><span>{number(data?.warnings)} avisos</span><span className="coral">{number(data?.failed)} falhas</span><small>Última execução: {formatDate(data?.last_run_at)}</small></div>
+    {!rows.length && !error ? <Empty>Ainda não existem execuções de testes dbt registradas.</Empty> : <div className="table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Severidade</th><th>Registros inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.test_unique_id)}><td><strong>{String(row.test_name)}</strong><small title={String(row.message || "")}>{String(row.message || "Sem mensagem")}</small></td><td>{String(row.test_type)}</td><td>{String(row.severity)}</td><td>{number(row.failed_records)}</td><td>{duration(row.execution_seconds)}</td><td><StatusMark status={row.status as Status} /></td><td><button className="text-button" onClick={() => void openEvidence(row)}>Ver evidências</button></td></tr>)}</tbody></table></div>}
+    {evidence && <EvidencePanel rows={evidence} onClose={() => setEvidence(null)} />}
   </DataPage>;
+}
+
+function EvidencePanel({ rows, onClose }: { rows: Record<string, unknown>[]; onClose: () => void }) {
+  return <div className="scrim" onMouseDown={onClose}><aside className="panel dataset-panel" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Evidências do teste"><button className="icon-button panel__close" onClick={onClose} aria-label="Fechar"><X /></button><p className="kicker">Registros preservados</p><h2>Evidências</h2>{rows.length ? <pre className="evidence-json">{JSON.stringify(rows, null, 2)}</pre> : <Empty>Este teste não possui registros inválidos preservados.</Empty>}</aside></div>;
 }
 
 function Incidents() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
-  useEffect(() => { api.incidents().then(setRows).catch(() => setRows([])); }, []);
-  return <DataPage kicker="Exception desk / critical signals" title="Incidents">
-    {!rows.length ? <div className="all-clear"><ShieldCheck /><div><strong>No open incident</strong><p>Nenhuma falha crítica foi capturada no histórico disponível.</p></div></div> : <div className="incident-list">{rows.map((row, i) => <article key={i}><AlertTriangle /><div><p>{formatDate(row.occurred_at)} / {String(row.run_id || "run")}</p><h3>{String(row.test_name)}</h3><small>{String(row.error || "Falha em teste dbt")}</small></div><strong>{number(row.invalid_records)}<small>invalid</small></strong></article>)}</div>}
+  const [error, setError] = useState("");
+  useEffect(() => { api.incidents().then(setRows).catch(() => setError("Não foi possível consultar as falhas operacionais.")); }, []);
+  return <DataPage kicker="Falhas operacionais registradas" title="Incidentes">
+    {error ? <Empty>{error}</Empty> : !rows.length ? <div className="all-clear"><ShieldCheck /><div><strong>Nenhuma falha registrada</strong><p>Não há falhas críticas nas evidências disponíveis. Esta é uma visão somente de leitura.</p></div></div> : <div className="incident-list">{rows.map((row, i) => <article key={i}><AlertTriangle /><div><p>{formatDate(row.occurred_at)} · {String(row.origin || "pipeline")} · severidade {String(row.severity || "error")}</p><h3>{String(row.test_name)}</h3><small>{String(row.error || "Falha sem mensagem registrada")}</small></div><strong>{number(row.invalid_records)}<small>inválidos</small></strong></article>)}</div>}
   </DataPage>;
 }
 
@@ -255,7 +289,7 @@ export default function App() {
       <div className="sidebar__foot"><Activity size={17} /><span>Operational layer<br /><b>Local environment</b></span></div>
     </aside>
     <main>
-      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenu(!menu)}><Menu /></button><span>AdventureWorks / Data Engineering</span><div><i /> Live signals</div></header>
+      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenu(!menu)} aria-label={menu ? "Fechar menu" : "Abrir menu"} aria-expanded={menu}><Menu /></button><span>AdventureWorks · Observabilidade</span></header>
       <div className="content">{page === "overview" ? <Overview /> : page === "runs" ? <Runs /> : page === "freshness" ? <Freshness /> : page === "quality" ? <Quality /> : <Incidents />}</div>
       <footer><span>Modern Data Platform / Observability</span><span>PostgreSQL · MinIO · dbt · Airflow</span></footer>
     </main>
