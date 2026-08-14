@@ -154,6 +154,10 @@ def execution_status(results: list[dict[str, Any]]) -> str:
 def integer_or_none(value: Any) -> int | None:
     if value is None or isinstance(value, bool):
         return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def node_layer(node: dict[str, Any]) -> str | None:
@@ -234,10 +238,6 @@ def persist_node_results(
                 result.get("message"),
             ),
         )
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def resolve_test_owner(

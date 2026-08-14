@@ -18,6 +18,12 @@ class ObservabilityDomainTests(unittest.TestCase):
     def test_missing_evidence_is_not_healthy(self):
         self.assertEqual(aggregate_status([], has_evidence=False), "not_started")
 
+    def test_partial_evidence_requires_attention(self):
+        self.assertEqual(
+            aggregate_status(["success", "success", "not_started"]),
+            "warning",
+        )
+
     def test_not_applicable_is_distinct_from_pending(self):
         self.assertEqual(normalize_status("skipped"), "not_applicable")
 

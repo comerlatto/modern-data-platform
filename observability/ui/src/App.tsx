@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Activity, AlertTriangle, ArrowDown, Check, Clock3,
-  Database, Gauge, HardDrive, Menu, RefreshCw, Search, ShieldCheck,
-  X,
+  Database, EyeOff, Gauge, HardDrive, Menu, Minus, RefreshCw, Search,
+  ShieldCheck, X,
 } from "lucide-react";
 import { api } from "./api";
 import { duration, formatDate, number, relativeDuration } from "./formatters";
@@ -43,7 +43,8 @@ function StatusMark({ status, compact = false }: { status: Status; compact?: boo
     value === "unmonitored" ? "unmonitored" :
     value === "success" ? "success" : "not_started";
   const Icon = normalized === "success" ? Check : normalized === "failed" ? X :
-    normalized === "warning" ? AlertTriangle : normalized === "running" ? RefreshCw : Clock3;
+    normalized === "warning" ? AlertTriangle : normalized === "running" ? RefreshCw :
+    normalized === "not_applicable" ? Minus : normalized === "unmonitored" ? EyeOff : Clock3;
   return (
     <span className={`status status--${normalized} ${compact ? "status--compact" : ""}`} title={statusLabel[normalized]} aria-label={statusLabel[normalized]}>
       <Icon size={compact ? 13 : 16} /> {!compact && statusLabel[normalized]}

@@ -353,14 +353,18 @@ def run_datasets(run_id: str) -> list[dict[str, Any]]:
         (run_id,),
     )
     for row in rows:
-        status = normalize_status(row.get("status"))
-        row["status"] = status
+        ingestion_status = normalize_status(row.get("status"))
         row["stages"] = {
-            "source": status,
-            "minio": status if row.get("minio_uploaded_at") else "not_started",
-            "raw": status if row.get("raw_loaded_at") else "not_started",
+            "source": ingestion_status,
+            "minio": ingestion_status if row.get("minio_uploaded_at") else "not_started",
+            "raw": ingestion_status if row.get("raw_loaded_at") else "not_started",
             **dataset_dbt_stages(run_id, row["dataset"]),
         }
+        monitored_stages = [
+            stage_status for stage, stage_status in row["stages"].items()
+            if stage != "powerbi"
+        ]
+        row["status"] = aggregate_status(monitored_stages, bool(monitored_stages))
     return rows
 
 
