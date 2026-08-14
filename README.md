@@ -11,6 +11,7 @@ O cenário simula uma empresa que depende diretamente de um banco transacional p
 A solução proposta separa processamento operacional e consumo analítico por meio de uma plataforma que contempla:
 
 - ingestão de dados;
+- preservação de snapshots brutos em armazenamento de objetos;
 - armazenamento em camada `raw`;
 - transformação com dbt;
 - modelagem dimensional;
@@ -35,6 +36,7 @@ A primeira versão da camada analítica de vendas está concluída e validada.
 | Catálogo e lineage do dbt | Concluído |
 | Mart de detalhes de vendas | Concluído |
 | Orquestração com Airflow | Concluído |
+| Snapshots brutos no MinIO | Concluído |
 | Backend de observabilidade dbt | Concluído |
 | Dashboard de vendas no Power BI | Em Andamento |
 
@@ -43,7 +45,8 @@ A primeira versão da camada analítica de vendas está concluída e validada.
 ```mermaid
 flowchart TD
     A[AdventureWorks OLTP] --> B[Ingestão Python]
-    B --> C[PostgreSQL RAW]
+    B --> M[MinIO - snapshot Parquet versionado]
+    M --> C[PostgreSQL RAW]
     C --> D[dbt Staging]
     D --> E[dbt Intermediate]
     E --> F[dbt Analytics]
@@ -63,17 +66,17 @@ cenário atual não exige.
 
 | # | Princípio | Avaliação atual | Justificativa |
 | --- | --- | --- | --- |
-| 1 | Componentes comuns | Atendido | GitHub, Airflow, dbt, PostgreSQL e os padrões de camadas são compartilhados por todo o projeto. |
+| 1 | Componentes comuns | Atendido | GitHub, Airflow, dbt, PostgreSQL, MinIO e os padrões de camadas são compartilhados por todo o projeto. |
 | 2 | Planejar para falhas | Parcialmente atendido | Há testes, freshness, retries automáticos, bloqueio do pipeline e preservação de evidências. Ainda faltam alertas, runbooks e uma estratégia documentada de recuperação. |
 | 3 | Escalabilidade | Atendido para a escala atual | PostgreSQL e cargas em lote atendem ao volume atual; a arquitetura não precisa escalar além do problema existente. |
 | 4 | Arquitetura como liderança | Parcialmente atendido | Decisões, trade-offs e padrões são documentados para que possam ser compreendidos, avaliados e reutilizados por outras pessoas. |
 | 5 | Arquitetura contínua | Atendido | A arquitetura é revisada de forma incremental, com lacunas identificadas e evoluções registradas no roadmap. |
-| 6 | Baixo acoplamento | Parcialmente atendido | Ingestão, transformação, orquestração e consumo estão separados, mas a ingestão ainda é específica para PostgreSQL e recria a camada `raw`. |
+| 6 | Baixo acoplamento | Parcialmente atendido | Ingestão, armazenamento de objetos, transformação, orquestração e consumo estão separados, mas a extração ainda é específica para PostgreSQL. |
 | 7 | Decisões reversíveis | Parcialmente atendido | Git, Docker, camadas separadas e regras centralizadas no dbt favorecem mudanças. A dependência de PostgreSQL e de SQL específico exigiria adaptação em uma migração. |
 | 8 | Segurança | Documentado; sem implementação necessária agora | O dataset é público e não contém dados pessoais reais. Em produção, campos classificados como PII seriam identificados e protegidos por mascaramento, remoção ou controle de acesso. Credenciais devem permanecer fora do versionamento. |
 | 9 | FinOps | Não aplicável operacionalmente no momento | A execução é local e não gera custos de nuvem a monitorar. O princípio passa a ser relevante na avaliação de alternativas como PostgreSQL e Snowflake. |
 | 10 | Confiabilidade | Adequada ao escopo atual | Health checks, retries e bloqueios reduzem falhas transitórias. Alta disponibilidade e failover não são necessários para este ambiente local de demonstração e adicionariam complexidade desproporcional. |
-| 11 | Durabilidade | Parcialmente atendida | Volumes persistentes preservam os bancos entre reinicializações dos containers, mas não substituem backup. Está planejado o uso do MinIO para manter os arquivos brutos em armazenamento de objetos e permitir reprocessamento independente do banco. |
+| 11 | Durabilidade | Atendida para o escopo atual | Cada execução preserva no MinIO um snapshot Parquet versionado antes de reconstruir a camada `raw`. Os volumes persistentes protegem os dados entre reinicializações, mas backups externos e testes de restauração ainda seriam necessários em produção. |
 
 A principal lacuna prática está no planejamento para falhas: alertas,
 procedimentos de resposta a incidentes e recuperação devem ser tratados como
@@ -85,6 +88,7 @@ principalmente oportunidades de documentação e desacoplamento gradual.
 | Área | Tecnologia |
 | --- | --- |
 | Banco de dados | PostgreSQL |
+| Armazenamento de objetos | MinIO |
 | Transformação | dbt |
 | Linguagens | SQL e Python |
 | Containerização | Docker e Docker Compose |
@@ -115,7 +119,8 @@ flowchart TD
     F --> O5[capture_marts]
 ```
 
-- `ingest_raw`: executa o script Python responsável pela carga da camada RAW;
+- `ingest_raw`: extrai as tabelas para snapshots Parquet versionados no MinIO e
+  carrega a camada RAW a partir dos mesmos artefatos;
 - `dbt_source_freshness`: verifica freshness técnica e de negócio; gera aviso
   após 25 horas e erro após 48 horas;
 - `capture_source_freshness`: persiste o conteúdo de `sources.json`, inclusive
@@ -313,6 +318,29 @@ Credenciais locais de desenvolvimento:
 Usuário: airflow
 Senha: airflow
 ```
+
+O console do MinIO estará disponível em `http://localhost:9001`. Por padrão,
+use `minioadmin` / `minioadmin123`; os valores podem ser alterados em `.env`.
+Os snapshots ficam no bucket `adventureworks-raw`, organizados por tabela e
+data da carga:
+
+```text
+raw/
+├── customer/
+│   └── load_date=2026-08-13/
+│       └── customer.parquet
+├── sales_order_header/
+│   └── load_date=2026-08-13/
+│       └── sales_order_header.parquet
+└── sales_order_detail/
+    └── load_date=2026-08-13/
+        └── sales_order_detail.parquet
+```
+
+O padrão `load_date=AAAA-MM-DD` permite leitura por partição. Quando uma tabela
+é carregada mais de uma vez no mesmo dia, o versionamento do bucket preserva
+as versões anteriores do mesmo objeto. A ingestão só recria uma tabela no
+PostgreSQL depois que o respectivo snapshot foi armazenado com sucesso.
 
 Na interface, ative e execute a DAG `adventureworks_pipeline`.
 
@@ -651,7 +679,7 @@ Para encerrar o servidor local da documentação, pressione `Ctrl + C` no termin
 | 5. Orquestração | DAG, scheduler, retries, logs e alertas | Próxima etapa |
 | 6. Business Intelligence | Modelo semântico e dashboards no Power BI | Planejado |
 | 7. Evolução das cargas | Ingestão incremental e simulação de novos eventos | Planejado |
-| 8. Durabilidade da ingestão | MinIO como camada de armazenamento dos arquivos brutos | Planejado |
+| 8. Durabilidade da ingestão | MinIO como camada de armazenamento dos arquivos brutos | Concluído |
 
 ## Próxima etapa
 
@@ -674,7 +702,6 @@ A próxima entrega é orquestrar a execução da plataforma com Apache Airflow. 
 - integração de cotação de moedas via API;
 - CI/CD com GitHub Actions;
 - observabilidade de volume, duração e falhas;
-- armazenamento dos arquivos brutos no MinIO para preservação e reprocessamento;
 - catálogo de dados;
 - deploy em nuvem;
 - avaliação de CDC, Kafka, DuckDB, Snowflake e Terraform.
@@ -699,7 +726,7 @@ Políticas de ciclo de vida e a separação entre dados quentes, mornos e frios 
 
 ### ADR-005 — Confiabilidade e durabilidade proporcionais ao escopo
 
-Failover e alta disponibilidade foram avaliados, mas não serão implementados porque o projeto executa localmente e não possui requisito de operação contínua. Para melhorar a durabilidade sem introduzir essa complexidade, o MinIO será incorporado futuramente como camada de armazenamento dos arquivos brutos. Essa separação permitirá preservar a entrada original e reprocessar os dados caso a camada `raw` do PostgreSQL precise ser reconstruída. Backups e testes de restauração continuarão sendo necessários para uma estratégia completa de recuperação.
+Failover e alta disponibilidade foram avaliados, mas não serão implementados porque o projeto executa localmente e não possui requisito de operação contínua. Para melhorar a durabilidade sem introduzir essa complexidade, o MinIO armazena um snapshot Parquet versionado de cada tabela, particionado por `load_date`, antes de a camada `raw` ser reconstruída. A carga no PostgreSQL usa o mesmo artefato que foi preservado, evitando divergência entre a cópia recuperável e os dados processados. Backups externos e testes de restauração continuariam sendo necessários para uma estratégia de produção completa.
 
 ## Objetivo profissional
 

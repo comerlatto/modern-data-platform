@@ -1,9 +1,18 @@
 import os
+import re
+import tempfile
+import uuid
 from datetime import datetime, timezone
+from typing import Any, Optional
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import psycopg
-from psycopg import sql
 from dotenv import load_dotenv
+from minio import Minio
+from minio.commonconfig import ENABLED
+from minio.versioningconfig import VersioningConfig
+from psycopg import sql
 
 
 load_dotenv()
@@ -22,6 +31,17 @@ SOURCE_TABLES = [
     ("humanresources", "employee"),
 ]
 
+SPOOL_MAX_SIZE = 64 * 1024 * 1024
+LOAD_BATCH_SIZE = 5_000
+
+OBJECT_TABLE_NAMES = {
+    "salesorderheader": "sales_order_header",
+    "salesorderdetail": "sales_order_detail",
+    "salesterritory": "sales_territory",
+    "specialoffer": "special_offer",
+    "salesperson": "sales_person",
+}
+
 
 def create_connection(prefix: str) -> psycopg.Connection:
     return psycopg.connect(
@@ -30,6 +50,59 @@ def create_connection(prefix: str) -> psycopg.Connection:
         user=os.environ[f"{prefix}_DB_USER"],
         password=os.environ[f"{prefix}_DB_PASSWORD"],
         port=os.environ[f"{prefix}_DB_PORT"],
+    )
+
+
+def create_minio_client() -> Minio:
+    secure = os.getenv("MINIO_SECURE", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+    return Minio(
+        endpoint=os.getenv("MINIO_ENDPOINT", "localhost:9000"),
+        access_key=os.getenv(
+            "MINIO_ACCESS_KEY",
+            os.getenv("MINIO_ROOT_USER", "minioadmin"),
+        ),
+        secret_key=os.getenv(
+            "MINIO_SECRET_KEY",
+            os.getenv("MINIO_ROOT_PASSWORD", "minioadmin123"),
+        ),
+        secure=secure,
+    )
+
+
+def ensure_versioned_bucket(client: Minio, bucket_name: str) -> None:
+    if not client.bucket_exists(bucket_name):
+        client.make_bucket(bucket_name)
+
+    client.set_bucket_versioning(
+        bucket_name,
+        VersioningConfig(ENABLED),
+    )
+
+
+def get_ingestion_run_id() -> str:
+    value = os.getenv("INGESTION_RUN_ID")
+    if not value:
+        value = datetime.now(timezone.utc).strftime(
+            "%Y%m%dT%H%M%S%fZ"
+        )
+
+    return re.sub(r"[^A-Za-z0-9._-]", "_", value)
+
+
+def build_object_name(
+    loaded_at: datetime,
+    table_name: str,
+) -> str:
+    object_table_name = OBJECT_TABLE_NAMES.get(table_name, table_name)
+    load_date = loaded_at.date().isoformat()
+    return (
+        f"raw/{object_table_name}/load_date={load_date}/"
+        f"{object_table_name}.parquet"
     )
 
 
@@ -107,77 +180,172 @@ def recreate_raw_table(
         cursor.execute(create_query)
 
 
-def load_table(
+def normalize_for_arrow(value: Any) -> Any:
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    if isinstance(value, memoryview):
+        return bytes(value)
+    return value
+
+
+def export_table_to_parquet(
     source_conn: psycopg.Connection,
-    warehouse_conn: psycopg.Connection,
     schema_name: str,
     table_name: str,
+    columns: list[tuple[str, str]],
+    loaded_at: datetime,
+    destination: tempfile.SpooledTemporaryFile,
 ) -> int:
-    columns = get_columns(
-        source_conn,
-        schema_name,
-        table_name,
-    )
-
-    recreate_raw_table(
-        warehouse_conn,
-        table_name,
-        columns,
-    )
-
     column_names = [column_name for column_name, _ in columns]
-
+    source_table = f"{schema_name}.{table_name}"
     select_query = sql.SQL("SELECT {} FROM {}.{}").format(
         sql.SQL(", ").join(map(sql.Identifier, column_names)),
         sql.Identifier(schema_name),
         sql.Identifier(table_name),
     )
 
-    insert_query = sql.SQL(
-        "INSERT INTO raw.{} ({}, _loaded_at, _source_table) "
-        "VALUES ({}, %s, %s)"
+    with source_conn.cursor() as cursor:
+        cursor.execute(select_query)
+        rows = cursor.fetchall()
+
+    parquet_data = {
+        column_name: [
+            normalize_for_arrow(row[index]) for row in rows
+        ]
+        for index, column_name in enumerate(column_names)
+    }
+    parquet_data["_loaded_at"] = [loaded_at] * len(rows)
+    parquet_data["_source_table"] = [source_table] * len(rows)
+
+    table = pa.table(parquet_data)
+    pq.write_table(table, destination, compression="snappy")
+
+    destination.seek(0)
+    return len(rows)
+
+
+def upload_snapshot(
+    client: Minio,
+    bucket_name: str,
+    object_name: str,
+    run_id: str,
+    source_table: str,
+    row_count: int,
+    loaded_at: datetime,
+    snapshot: tempfile.SpooledTemporaryFile,
+) -> Optional[str]:
+    snapshot.seek(0, os.SEEK_END)
+    snapshot_size = snapshot.tell()
+    snapshot.seek(0)
+
+    result = client.put_object(
+        bucket_name=bucket_name,
+        object_name=object_name,
+        data=snapshot,
+        length=snapshot_size,
+        content_type="application/vnd.apache.parquet",
+        metadata={
+            "source-table": source_table,
+            "row-count": str(row_count),
+            "loaded-at": loaded_at.isoformat(),
+            "run-id": run_id,
+        },
+    )
+    snapshot.seek(0)
+    return result.version_id
+
+
+def load_parquet_to_raw(
+    warehouse_conn: psycopg.Connection,
+    table_name: str,
+    columns: list[tuple[str, str]],
+    snapshot: tempfile.SpooledTemporaryFile,
+) -> None:
+    column_names = [column_name for column_name, _ in columns]
+    column_names.extend(["_loaded_at", "_source_table"])
+    copy_query = sql.SQL(
+        "COPY raw.{} ({}) FROM STDIN"
     ).format(
         sql.Identifier(table_name),
         sql.SQL(", ").join(map(sql.Identifier, column_names)),
-        sql.SQL(", ").join(sql.Placeholder() * len(column_names)),
     )
 
-    loaded_at = datetime.now(timezone.utc)
+    snapshot.seek(0)
+    parquet_file = pq.ParquetFile(snapshot)
+    with warehouse_conn.cursor() as cursor:
+        with cursor.copy(copy_query) as copy:
+            for batch in parquet_file.iter_batches(
+                batch_size=LOAD_BATCH_SIZE
+            ):
+                for record in batch.to_pylist():
+                    copy.write_row(
+                        tuple(record[name] for name in column_names)
+                    )
+    snapshot.seek(0)
+
+
+def load_table(
+    source_conn: psycopg.Connection,
+    warehouse_conn: psycopg.Connection,
+    minio_client: Minio,
+    bucket_name: str,
+    run_id: str,
+    schema_name: str,
+    table_name: str,
+) -> int:
     source_table = f"{schema_name}.{table_name}"
-    row_count = 0
-    batch_size = 5_000
-
-    with source_conn.cursor() as source_cursor:
-        source_cursor.execute(select_query)
-
-        with warehouse_conn.cursor() as warehouse_cursor:
-            while rows := source_cursor.fetchmany(batch_size):
-                records = [
-                    (*row, loaded_at, source_table)
-                    for row in rows
-                ]
-
-                warehouse_cursor.executemany(
-                    insert_query,
-                    records,
-                )
-
-                row_count += len(records)
-                print(
-                    f"  {source_table}: "
-                    f"{row_count:,} registros copiados",
-                    end="\r",
-                )
-
-    print(
-        f"  {source_table}: "
-        f"{row_count:,} registros copiados"
+    loaded_at = datetime.now(timezone.utc)
+    columns = get_columns(source_conn, schema_name, table_name)
+    object_name = build_object_name(
+        loaded_at,
+        table_name,
     )
+
+    with tempfile.SpooledTemporaryFile(
+        max_size=SPOOL_MAX_SIZE,
+        mode="w+b",
+    ) as snapshot:
+        row_count = export_table_to_parquet(
+            source_conn,
+            schema_name,
+            table_name,
+            columns,
+            loaded_at,
+            snapshot,
+        )
+        version_id = upload_snapshot(
+            minio_client,
+            bucket_name,
+            object_name,
+            run_id,
+            source_table,
+            row_count,
+            loaded_at,
+            snapshot,
+        )
+
+        recreate_raw_table(warehouse_conn, table_name, columns)
+        load_parquet_to_raw(
+            warehouse_conn,
+            table_name,
+            columns,
+            snapshot,
+        )
+
+    version_suffix = f" (versão {version_id})" if version_id else ""
+    print(f"  MinIO: {bucket_name}/{object_name}{version_suffix}")
+    print(f"  PostgreSQL: {row_count:,} registros copiados")
 
     return row_count
 
 
 def main() -> None:
+    bucket_name = os.getenv("MINIO_BUCKET", "adventureworks-raw")
+    run_id = get_ingestion_run_id()
+    minio_client = create_minio_client()
+    ensure_versioned_bucket(minio_client, bucket_name)
+    print(f"MinIO disponível. Bucket versionado: {bucket_name}.")
+
     with create_connection("SOURCE") as source_conn:
         with create_connection("WAREHOUSE") as warehouse_conn:
             print("Conexões estabelecidas.")
@@ -197,6 +365,9 @@ def main() -> None:
                     load_table(
                         source_conn,
                         warehouse_conn,
+                        minio_client,
+                        bucket_name,
+                        run_id,
                         schema_name,
                         table_name,
                     )
@@ -210,7 +381,10 @@ def main() -> None:
                     )
                     raise
 
-            print("\nCarga full refresh concluída com sucesso.")
+            print(
+                "\nCarga full refresh concluída com sucesso. "
+                f"Execução preservada no bucket {bucket_name}: {run_id}."
+            )
 
 
 if __name__ == "__main__":

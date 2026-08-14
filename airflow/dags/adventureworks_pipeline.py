@@ -54,7 +54,7 @@ with DAG(
     ingest_raw = BashOperator(
         task_id="ingest_raw",
         bash_command=(
-            "python "
+            "INGESTION_RUN_ID='{{ ts_nodash }}' python "
             "/opt/airflow/project/python/ingestion/load_raw.py"
         ),
     )
