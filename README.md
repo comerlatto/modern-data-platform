@@ -72,6 +72,8 @@ cenário atual não exige.
 | 7 | Decisões reversíveis | Parcialmente atendido | Git, Docker, camadas separadas e regras centralizadas no dbt favorecem mudanças. A dependência de PostgreSQL e de SQL específico exigiria adaptação em uma migração. |
 | 8 | Segurança | Documentado; sem implementação necessária agora | O dataset é público e não contém dados pessoais reais. Em produção, campos classificados como PII seriam identificados e protegidos por mascaramento, remoção ou controle de acesso. Credenciais devem permanecer fora do versionamento. |
 | 9 | FinOps | Não aplicável operacionalmente no momento | A execução é local e não gera custos de nuvem a monitorar. O princípio passa a ser relevante na avaliação de alternativas como PostgreSQL e Snowflake. |
+| 10 | Confiabilidade | Adequada ao escopo atual | Health checks, retries e bloqueios reduzem falhas transitórias. Alta disponibilidade e failover não são necessários para este ambiente local de demonstração e adicionariam complexidade desproporcional. |
+| 11 | Durabilidade | Parcialmente atendida | Volumes persistentes preservam os bancos entre reinicializações dos containers, mas não substituem backup. Está planejado o uso do MinIO para manter os arquivos brutos em armazenamento de objetos e permitir reprocessamento independente do banco. |
 
 A principal lacuna prática está no planejamento para falhas: alertas,
 procedimentos de resposta a incidentes e recuperação devem ser tratados como
@@ -649,6 +651,7 @@ Para encerrar o servidor local da documentação, pressione `Ctrl + C` no termin
 | 5. Orquestração | DAG, scheduler, retries, logs e alertas | Próxima etapa |
 | 6. Business Intelligence | Modelo semântico e dashboards no Power BI | Planejado |
 | 7. Evolução das cargas | Ingestão incremental e simulação de novos eventos | Planejado |
+| 8. Durabilidade da ingestão | MinIO como camada de armazenamento dos arquivos brutos | Planejado |
 
 ## Próxima etapa
 
@@ -671,9 +674,10 @@ A próxima entrega é orquestrar a execução da plataforma com Apache Airflow. 
 - integração de cotação de moedas via API;
 - CI/CD com GitHub Actions;
 - observabilidade de volume, duração e falhas;
+- armazenamento dos arquivos brutos no MinIO para preservação e reprocessamento;
 - catálogo de dados;
 - deploy em nuvem;
-- avaliação de CDC, Kafka, MinIO, DuckDB, Snowflake e Terraform.
+- avaliação de CDC, Kafka, DuckDB, Snowflake e Terraform.
 
 ## Decisões arquiteturais
 
@@ -692,6 +696,10 @@ Fatos e dimensões utilizam contratos para garantir compatibilidade entre o SQL 
 ### ADR-004 — Ciclo de vida e temperatura dos dados
 
 Políticas de ciclo de vida e a separação entre dados quentes, mornos e frios foram consideradas, mas não são necessárias para o escopo e o volume atuais do projeto. Por isso, essa capacidade não integra o backlog de implementação. A decisão deverá ser reavaliada caso a plataforma passe a simular volumes significativamente maiores ou a manter um histórico com períodos extensos de retenção.
+
+### ADR-005 — Confiabilidade e durabilidade proporcionais ao escopo
+
+Failover e alta disponibilidade foram avaliados, mas não serão implementados porque o projeto executa localmente e não possui requisito de operação contínua. Para melhorar a durabilidade sem introduzir essa complexidade, o MinIO será incorporado futuramente como camada de armazenamento dos arquivos brutos. Essa separação permitirá preservar a entrada original e reprocessar os dados caso a camada `raw` do PostgreSQL precise ser reconstruída. Backups e testes de restauração continuarão sendo necessários para uma estratégia completa de recuperação.
 
 ## Objetivo profissional
 
