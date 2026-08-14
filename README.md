@@ -38,6 +38,7 @@ A primeira versão da camada analítica de vendas está concluída e validada.
 | Orquestração com Airflow | Concluído |
 | Snapshots brutos no MinIO | Concluído |
 | Backend de observabilidade dbt | Concluído |
+| Control Center de observabilidade | Concluído |
 | Dashboard de vendas no Power BI | Em Andamento |
 
 ## Arquitetura
@@ -96,6 +97,7 @@ principalmente oportunidades de documentação e desacoplamento gradual.
 | Visualização | Power BI |
 | Versionamento | Git e GitHub |
 | Documentação | Markdown, Mermaid e dbt Docs |
+| Observabilidade web | React, TypeScript e FastAPI |
 
 # Orquestração com Apache Airflow
 
@@ -121,8 +123,9 @@ flowchart TD
 
 - `ingest_raw`: extrai as tabelas para snapshots Parquet versionados no MinIO e
   carrega a camada RAW a partir dos mesmos artefatos;
-- `dbt_source_freshness`: verifica freshness técnica e de negócio; gera aviso
-  após 25 horas e erro após 48 horas;
+- `dbt_source_freshness`: verifica freshness técnica e de negócio. Fontes
+  cadastrais geram aviso após 25 horas e erro após 48 horas; as tabelas
+  transacionais históricas geram apenas aviso, sem bloquear o build;
 - `capture_source_freshness`: persiste o conteúdo de `sources.json`, inclusive
   quando a freshness falha e bloqueia o build;
 - `build_staging`: constrói e testa os modelos de padronização das sources;
@@ -136,10 +139,12 @@ flowchart TD
   sucesso;
 - novas tentativas são executadas automaticamente em caso de falha.
 
-Quando a freshness atinge `error`, `dbt_source_freshness` falha e o
+Quando a freshness cadastral atinge `error`, `dbt_source_freshness` falha e o
 `build_staging` não é executado. Um resultado `warn` não bloqueia o restante
-do pipeline. Nos dois casos, `capture_source_freshness` registra o resultado
-para investigação.
+do pipeline. Como o AdventureWorks é um dataset histórico estático,
+`salesorderheader` e `salesorderdetail` utilizam `modifieddate` para sinalizar
+a idade do evento de negócio, mas não elevam essa condição a erro. Em todos os
+casos, `capture_source_freshness` registra o resultado para investigação.
 
 Todas as tarefas de captura usam `trigger_rule="all_done"`. Assim, a captura de
 uma camada ocorre mesmo quando um teste daquele gate reprova. A falha original
@@ -194,7 +199,7 @@ o que está implementado atualmente:
 ```mermaid
 flowchart TD
     A["Source systems"] --> B["Carga da camada RAW"]
-    B --> C["Source freshness<br/>warn: 25 h · error: 48 h"]
+    B --> C["Source freshness<br/>cadastros: warn 25 h · error 48 h<br/>transações históricas: warn 25 h"]
     C --> D{"Fresh enough?"}
 
     D -- "Error" --> X["Block pipeline"]
@@ -342,6 +347,48 @@ O padrão `load_date=AAAA-MM-DD` permite leitura por partição. Quando uma tabe
 as versões anteriores do mesmo objeto. A ingestão só recria uma tabela no
 PostgreSQL depois que o respectivo snapshot foi armazenado com sucesso.
 
+### Data Platform Control Center
+
+A interface unificada de observabilidade está disponível em
+`http://localhost:3000`, com a API REST em `http://localhost:8000`. Ela consolida
+os sinais operacionais preservados no schema `observability` e oferece:
+
+- status geral e tracker da execução mais recente;
+- jornada de ingestão por dataset, incluindo objeto MinIO e contagens;
+- histórico de execuções;
+- freshness das sources;
+- resultados e falhas dos testes dbt;
+- visão consolidada de incidentes.
+
+A interface é uma camada de diagnóstico e drill-down. Airflow continua sendo o
+orquestrador, MinIO permanece como console de objetos e dbt é a fonte dos
+resultados de qualidade. A API expõe os principais recursos em `/api`, e a
+documentação interativa fica em `http://localhost:8000/docs`.
+
+Toda informação exibida possui origem persistida no PostgreSQL Warehouse. A
+telemetria segue o mesmo `run_id` do Airflow e é centralizada em:
+
+| Tabela | Origem | Conteúdo |
+| --- | --- | --- |
+| `observability.pipeline_runs` | callbacks da DAG | início, fim, status, duração e erro da execução |
+| `observability.ingestion_runs` | ingestão Python | contagens, objeto Parquet, tamanho, timestamps da extração, MinIO e RAW |
+| `observability.dataset_freshness` | ingestão e encerramento da DAG | timestamps por estágio, SLA e status |
+| `observability.dbt_runs` | artifacts dbt | metadados e status das execuções dbt |
+| `observability.dbt_test_results` | `run_results.json` e `manifest.json` | testes, severidade, falhas, duração e ownership |
+| `observability.dbt_test_failure_details` | relações de falha dbt | registros inválidos capturados |
+| `observability.source_freshness_results` | `sources.json` | freshness técnica e de negócio das sources |
+
+O frontend não consulta Airflow, MinIO ou dbt diretamente. A FastAPI consolida
+os estados `success`, `running`, `warning`, `failed`, `blocked` e
+`not_started`. Se uma etapa falha, as dependentes são apresentadas como
+`blocked`. Falhas de escrita puramente observacional são registradas no output
+quando possível, mas não invalidam uma carga de dados que tenha sido concluída.
+
+Além do overview, a API oferece `/api/runs/latest`, `/api/runs/{run_id}`,
+`/api/runs/{run_id}/datasets`, `/api/runs/{run_id}/tests`,
+`/api/datasets/{dataset}/history`, `/api/freshness`, `/api/data-quality` e
+`/api/incidents` para reconstrução e investigação histórica.
+
 Na interface, ative e execute a DAG `adventureworks_pipeline`.
 
 ## Estrutura do projeto
@@ -360,6 +407,7 @@ modern-data-platform/
 ├── docker/                   # Recursos de containerização
 ├── docs/                     # Documentação complementar
 ├── powerbi/                  # Artefatos do Power BI
+├── observability/            # API FastAPI e interface React
 ├── python/                   # Ingestão e simulação de dados
 ├── docker-compose.yml
 └── README.md

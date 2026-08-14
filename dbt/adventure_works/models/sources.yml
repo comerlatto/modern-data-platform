@@ -20,6 +20,11 @@ sources:
         description: Cabeçalho dos pedidos de venda.
         config:
           loaded_at_field: modifieddate
+          freshness:
+            warn_after:
+              count: 25
+              period: hour
+            error_after: null
           meta:
             freshness_type: business
 
@@ -27,6 +32,11 @@ sources:
         description: Itens dos pedidos de venda.
         config:
           loaded_at_field: modifieddate
+          freshness:
+            warn_after:
+              count: 25
+              period: hour
+            error_after: null
           meta:
             freshness_type: business
 

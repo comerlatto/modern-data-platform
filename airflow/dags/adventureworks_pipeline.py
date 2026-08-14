@@ -1,4 +1,5 @@
 from datetime import timedelta
+import subprocess
 
 import pendulum
 from airflow.providers.standard.operators.bash import BashOperator
@@ -7,6 +8,30 @@ from airflow.sdk import DAG
 
 DBT_PROJECT_DIR = "/opt/airflow/project/dbt/adventure_works"
 DBT_PROFILES_DIR = "/opt/airflow/dbt"
+PIPELINE_TELEMETRY = "/opt/airflow/project/python/observability/pipeline_run.py"
+
+
+def finish_pipeline(context: dict, status: str) -> None:
+    dag_run = context.get("dag_run")
+    if not dag_run:
+        return
+    command = [
+        "python", PIPELINE_TELEMETRY,
+        "--run-id", dag_run.run_id,
+        "--status", status,
+        "--started-at", dag_run.start_date.isoformat(),
+    ]
+    if status == "failed" and context.get("exception"):
+        command.extend(["--error-message", str(context["exception"])[:4000]])
+    subprocess.run(command, check=False)
+
+
+def pipeline_succeeded(context: dict) -> None:
+    finish_pipeline(context, "success")
+
+
+def pipeline_failed(context: dict) -> None:
+    finish_pipeline(context, "failed")
 
 
 def dbt_build_task(task_id: str, layer: str, selection: str) -> BashOperator:
@@ -48,13 +73,24 @@ with DAG(
         "retries": 2,
         "retry_delay": timedelta(minutes=1),
     },
+    on_success_callback=pipeline_succeeded,
+    on_failure_callback=pipeline_failed,
     tags=["adventureworks", "ingestion", "dbt"],
 ) as dag:
+
+    record_pipeline_start = BashOperator(
+        task_id="record_pipeline_start",
+        bash_command=(
+            "python " + PIPELINE_TELEMETRY + " "
+            "--run-id '{{ run_id }}' --status running "
+            "--started-at '{{ dag_run.start_date.isoformat() }}'"
+        ),
+    )
 
     ingest_raw = BashOperator(
         task_id="ingest_raw",
         bash_command=(
-            "INGESTION_RUN_ID='{{ ts_nodash }}' python "
+            "INGESTION_RUN_ID='{{ run_id }}' python "
             "/opt/airflow/project/python/ingestion/load_raw.py"
         ),
     )
@@ -127,7 +163,7 @@ with DAG(
         layer="marts",
     )
 
-    ingest_raw >> dbt_source_freshness
+    record_pipeline_start >> ingest_raw >> dbt_source_freshness
     dbt_source_freshness >> capture_source_freshness
     (
         dbt_source_freshness

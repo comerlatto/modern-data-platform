@@ -197,6 +197,48 @@ services:
       airflow-api-server:
         condition: service_healthy
 
+  observability-api:
+    build:
+      context: ./observability/api
+    container_name: adventureworks_observability_api
+    environment:
+      WAREHOUSE_DB_HOST: warehouse
+      WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-analytics}
+      WAREHOUSE_DB_USER: ${WAREHOUSE_DB_USER:-analytics_user}
+      WAREHOUSE_DB_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-analytics_dev}
+      WAREHOUSE_DB_PORT: 5432
+      OBSERVABILITY_UI_ORIGIN: http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      warehouse:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  observability-ui:
+    build:
+      context: ./observability/ui
+      args:
+        VITE_API_URL: http://localhost:8000
+    container_name: adventureworks_observability_ui
+    ports:
+      - "3000:3000"
+    depends_on:
+      observability-api:
+        condition: service_healthy
+    restart: unless-stopped
+
 
 volumes:
   source_data:

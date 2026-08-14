@@ -18,6 +18,11 @@ dbt/dbt_packages/
 .idea/
 .vscode/
 
+# Observability web UI
+observability/ui/node_modules/
+observability/ui/dist/
+observability/ui/*.tsbuildinfo
+
 **/.pbi/localSettings.json
 **/.pbi/cache.abf
 **/.pbi/editorSettings.json

@@ -33,8 +33,8 @@ class LoadRawMinioTests(unittest.TestCase):
         )
 
     @patch.dict(os.environ, {"INGESTION_RUN_ID": "manual:run/01"})
-    def test_get_ingestion_run_id_removes_unsafe_path_characters(self):
-        self.assertEqual(get_ingestion_run_id(), "manual_run_01")
+    def test_get_ingestion_run_id_preserves_orchestrator_identifier(self):
+        self.assertEqual(get_ingestion_run_id(), "manual:run/01")
 
     def test_ensure_versioned_bucket_creates_missing_bucket(self):
         client = Mock()
@@ -84,7 +84,7 @@ class LoadRawMinioTests(unittest.TestCase):
         snapshot = io.BytesIO(b"id,name\n1,Ada\n")
         loaded_at = datetime(2026, 8, 13, 22, 30, tzinfo=timezone.utc)
 
-        version_id = upload_snapshot(
+        version_id, snapshot_size = upload_snapshot(
             client,
             "adventureworks-raw",
             "raw/customer/load_date=2026-08-13/customer.parquet",
@@ -96,6 +96,7 @@ class LoadRawMinioTests(unittest.TestCase):
         )
 
         self.assertEqual(version_id, "v1")
+        self.assertEqual(snapshot_size, len(snapshot.getvalue()))
         self.assertEqual(snapshot.tell(), 0)
         call = client.put_object.call_args.kwargs
         self.assertEqual(call["length"], len(snapshot.getvalue()))

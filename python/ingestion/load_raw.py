@@ -1,5 +1,4 @@
 import os
-import re
 import tempfile
 import uuid
 from datetime import datetime, timezone
@@ -91,7 +90,7 @@ def get_ingestion_run_id() -> str:
             "%Y%m%dT%H%M%S%fZ"
         )
 
-    return re.sub(r"[^A-Za-z0-9._-]", "_", value)
+    return value
 
 
 def build_object_name(
@@ -233,7 +232,7 @@ def upload_snapshot(
     row_count: int,
     loaded_at: datetime,
     snapshot: tempfile.SpooledTemporaryFile,
-) -> Optional[str]:
+) -> tuple[Optional[str], int]:
     snapshot.seek(0, os.SEEK_END)
     snapshot_size = snapshot.tell()
     snapshot.seek(0)
@@ -252,7 +251,156 @@ def upload_snapshot(
         },
     )
     snapshot.seek(0)
-    return result.version_id
+    return result.version_id, snapshot_size
+
+
+def ensure_ingestion_observability(
+    warehouse_conn: psycopg.Connection,
+) -> None:
+    warehouse_conn.execute(
+        """
+        CREATE SCHEMA IF NOT EXISTS observability;
+        CREATE TABLE IF NOT EXISTS observability.ingestion_runs (
+            run_id text NOT NULL,
+            source_table text NOT NULL,
+            started_at timestamptz NOT NULL,
+            extracted_at timestamptz,
+            finished_at timestamptz,
+            source_row_count bigint,
+            minio_bucket text,
+            minio_object text,
+            file_name text,
+            file_size_bytes bigint,
+            minio_uploaded_at timestamptz,
+            raw_loaded_at timestamptz,
+            raw_row_count bigint,
+            duration_seconds numeric,
+            status text NOT NULL,
+            error_message text,
+            PRIMARY KEY (run_id, source_table)
+        );
+        ALTER TABLE observability.ingestion_runs
+            ADD COLUMN IF NOT EXISTS extracted_at timestamptz;
+        ALTER TABLE observability.ingestion_runs
+            ADD COLUMN IF NOT EXISTS minio_bucket text;
+        ALTER TABLE observability.ingestion_runs
+            ADD COLUMN IF NOT EXISTS file_name text;
+        CREATE INDEX IF NOT EXISTS idx_ingestion_runs_started_at
+            ON observability.ingestion_runs(started_at DESC);
+        CREATE TABLE IF NOT EXISTS observability.dataset_freshness (
+            run_id text NOT NULL,
+            dataset_name text NOT NULL,
+            source_updated_at timestamptz,
+            minio_updated_at timestamptz,
+            warehouse_updated_at timestamptz,
+            analytics_updated_at timestamptz,
+            sla_minutes integer NOT NULL DEFAULT 1440,
+            status text NOT NULL,
+            PRIMARY KEY (run_id, dataset_name)
+        );
+        """
+    )
+
+
+def record_ingestion_success(
+    warehouse_conn: psycopg.Connection,
+    run_id: str,
+    source_table: str,
+    started_at: datetime,
+    finished_at: datetime,
+    row_count: int,
+    bucket_name: str,
+    object_name: str,
+    file_size: int,
+    minio_uploaded_at: datetime,
+) -> None:
+    warehouse_conn.execute(
+        """
+        INSERT INTO observability.ingestion_runs (
+            run_id, source_table, started_at, extracted_at, finished_at,
+            source_row_count, minio_bucket, minio_object, file_name, file_size_bytes,
+            minio_uploaded_at, raw_loaded_at, raw_row_count,
+            duration_seconds, status
+        ) VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'success'
+        )
+        ON CONFLICT (run_id, source_table) DO UPDATE SET
+            finished_at = EXCLUDED.finished_at,
+            source_row_count = EXCLUDED.source_row_count,
+            extracted_at = EXCLUDED.extracted_at,
+            minio_bucket = EXCLUDED.minio_bucket,
+            minio_object = EXCLUDED.minio_object,
+            file_name = EXCLUDED.file_name,
+            file_size_bytes = EXCLUDED.file_size_bytes,
+            minio_uploaded_at = EXCLUDED.minio_uploaded_at,
+            raw_loaded_at = EXCLUDED.raw_loaded_at,
+            raw_row_count = EXCLUDED.raw_row_count,
+            duration_seconds = EXCLUDED.duration_seconds,
+            status = EXCLUDED.status,
+            error_message = NULL
+        """,
+        (
+            run_id,
+            source_table,
+            started_at,
+            minio_uploaded_at,
+            finished_at,
+            row_count,
+            bucket_name,
+            object_name,
+            object_name.rsplit("/", 1)[-1],
+            file_size,
+            minio_uploaded_at,
+            finished_at,
+            row_count,
+            (finished_at - started_at).total_seconds(),
+        ),
+    )
+    warehouse_conn.execute(
+        """
+        INSERT INTO observability.dataset_freshness (
+            run_id, dataset_name, source_updated_at, minio_updated_at,
+            warehouse_updated_at, status
+        ) VALUES (%s, %s, %s, %s, %s, 'success')
+        ON CONFLICT (run_id, dataset_name) DO UPDATE SET
+            source_updated_at = EXCLUDED.source_updated_at,
+            minio_updated_at = EXCLUDED.minio_updated_at,
+            warehouse_updated_at = EXCLUDED.warehouse_updated_at,
+            status = EXCLUDED.status
+        """,
+        (run_id, source_table, started_at, minio_uploaded_at, finished_at),
+    )
+
+
+def record_ingestion_failure(
+    warehouse_conn: psycopg.Connection,
+    run_id: str,
+    source_table: str,
+    started_at: datetime,
+    error: Exception,
+) -> None:
+    finished_at = datetime.now(timezone.utc)
+    warehouse_conn.execute(
+        """
+        INSERT INTO observability.ingestion_runs (
+            run_id, source_table, started_at, finished_at,
+            duration_seconds, status, error_message
+        ) VALUES (%s, %s, %s, %s, %s, 'failed', %s)
+        ON CONFLICT (run_id, source_table) DO UPDATE SET
+            finished_at = EXCLUDED.finished_at,
+            duration_seconds = EXCLUDED.duration_seconds,
+            status = EXCLUDED.status,
+            error_message = EXCLUDED.error_message
+        """,
+        (
+            run_id,
+            source_table,
+            started_at,
+            finished_at,
+            (finished_at - started_at).total_seconds(),
+            str(error)[:4000],
+        ),
+    )
 
 
 def load_parquet_to_raw(
@@ -293,8 +441,9 @@ def load_table(
     schema_name: str,
     table_name: str,
 ) -> int:
+    started_at = datetime.now(timezone.utc)
     source_table = f"{schema_name}.{table_name}"
-    loaded_at = datetime.now(timezone.utc)
+    loaded_at = started_at
     columns = get_columns(source_conn, schema_name, table_name)
     object_name = build_object_name(
         loaded_at,
@@ -313,7 +462,7 @@ def load_table(
             loaded_at,
             snapshot,
         )
-        version_id = upload_snapshot(
+        version_id, file_size = upload_snapshot(
             minio_client,
             bucket_name,
             object_name,
@@ -323,6 +472,7 @@ def load_table(
             loaded_at,
             snapshot,
         )
+        minio_uploaded_at = datetime.now(timezone.utc)
 
         recreate_raw_table(warehouse_conn, table_name, columns)
         load_parquet_to_raw(
@@ -331,6 +481,24 @@ def load_table(
             columns,
             snapshot,
         )
+
+    finished_at = datetime.now(timezone.utc)
+    try:
+        with warehouse_conn.transaction():
+            record_ingestion_success(
+                warehouse_conn,
+                run_id,
+                source_table,
+                started_at,
+                finished_at,
+                row_count,
+                bucket_name,
+                object_name,
+                file_size,
+                minio_uploaded_at,
+            )
+    except Exception as error:
+        print(f"  Observabilidade: falha não bloqueante: {error}")
 
     version_suffix = f" (versão {version_id})" if version_id else ""
     print(f"  MinIO: {bucket_name}/{object_name}{version_suffix}")
@@ -357,9 +525,17 @@ def main() -> None:
 
             warehouse_conn.commit()
             print("Schema raw disponível.")
+            try:
+                ensure_ingestion_observability(warehouse_conn)
+                warehouse_conn.commit()
+                print("Observabilidade da ingestão disponível.")
+            except Exception as error:
+                warehouse_conn.rollback()
+                print(f"Observabilidade indisponível (não bloqueante): {error}")
 
             for schema_name, table_name in SOURCE_TABLES:
                 print(f"\nCarregando {schema_name}.{table_name}...")
+                attempt_started_at = datetime.now(timezone.utc)
 
                 try:
                     load_table(
@@ -373,8 +549,23 @@ def main() -> None:
                     )
                     warehouse_conn.commit()
 
-                except Exception:
+                except Exception as error:
                     warehouse_conn.rollback()
+                    try:
+                        record_ingestion_failure(
+                            warehouse_conn,
+                            run_id,
+                            f"{schema_name}.{table_name}",
+                            attempt_started_at,
+                            error,
+                        )
+                        warehouse_conn.commit()
+                    except Exception as telemetry_error:
+                        warehouse_conn.rollback()
+                        print(
+                            "Falha adicional de instrumentação: "
+                            f"{telemetry_error}"
+                        )
                     print(
                         f"Erro ao carregar "
                         f"{schema_name}.{table_name}."
