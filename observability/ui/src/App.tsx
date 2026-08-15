@@ -58,7 +58,7 @@ function StatusMark({ status, compact = false, pill = true, label }: { status: S
     normalized === "not_applicable" ? Minus : normalized === "unmonitored" ? EyeOff : Clock3;
   return (
     <span className={`status status--${normalized} ${compact ? "status--compact" : ""} ${pill && !compact ? "status--pill" : ""}`} title={label || statusLabel[normalized]} aria-label={label || statusLabel[normalized]}>
-      <Icon size={compact ? 13 : 16} /> {!compact && (label || statusLabel[normalized])}
+      {compact && normalized === "warning" ? <b aria-hidden="true">!</b> : <Icon size={compact ? 13 : 16} />} {!compact && (label || statusLabel[normalized])}
     </span>
   );
 }
@@ -122,7 +122,7 @@ function Tracker({ stages }: { stages: Stage[] }) {
         <div className="tracker__segment" key={stage.id}>
           <button className={`stage stage--${stage.status}`} onClick={() => setSelected(stage)} aria-label={`Abrir detalhes de ${stage.label}`}>
             <span className="stage__number">0{index + 1}</span>
-            <span className="stage__icon"><span className={`stage__dot stage__dot--${stage.status}`} aria-hidden="true" /></span>
+            <span className="stage__icon"><StatusMark status={stage.status} compact /></span>
             <strong>{stage.label}</strong>
             <small>{statusLabel[stage.status]}</small>
           </button>
