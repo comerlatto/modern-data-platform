@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  Activity, AlertTriangle, ArrowDown, Braces, Check, CircleAlert, Clock3,
+  Activity, AlertTriangle, ArrowDown, ArrowRight, Braces, Check, Clock3,
   Database, EyeOff, Gauge, HardDrive, Menu, Minus, RefreshCw, Search,
   FileCheck2, ShieldCheck, X,
 } from "lucide-react";
@@ -47,15 +47,14 @@ function TestTypeMark({ type }: { type: unknown }) {
   return <span className={`test-type test-type--${singular ? "singular" : "generic"}`} title={`Tipo de teste: ${label}`}><Icon size={14} aria-hidden="true" />{label}</span>;
 }
 
-function SeverityMark({ severity }: { severity: unknown }) {
+function FailurePolicyMark({ severity }: { severity: unknown }) {
   const value = String(severity || "").toLowerCase();
   const warning = ["warn", "warning"].includes(value);
-  const Icon = warning ? AlertTriangle : CircleAlert;
-  const label = warning ? "Aviso" : value === "error" ? "Erro" : String(severity || "Não definida");
-  return <span className={`severity severity--${warning ? "warning" : "error"}`} title={`Severidade: ${label}`}><Icon size={14} aria-hidden="true" />{label}</span>;
+  const label = warning ? "Gera aviso" : value === "error" ? "Bloqueia pipeline" : "Política não definida";
+  return <span className="failure-policy" title={`Em caso de falha: ${label}`}>{label}</span>;
 }
 
-function StatusMark({ status, compact = false, pill = false }: { status: Status; compact?: boolean; pill?: boolean }) {
+function StatusMark({ status, compact = false, pill = true }: { status: Status; compact?: boolean; pill?: boolean }) {
   const value = String(status).toLowerCase();
   const normalized: Status = ["pass", "passed"].includes(value) ? "success" :
     ["error", "fail", "failed", "runtime error"].includes(value) ? "failed" :
@@ -68,7 +67,7 @@ function StatusMark({ status, compact = false, pill = false }: { status: Status;
     normalized === "warning" ? AlertTriangle : normalized === "running" ? RefreshCw :
     normalized === "not_applicable" ? Minus : normalized === "unmonitored" ? EyeOff : Clock3;
   return (
-    <span className={`status status--${normalized} ${compact ? "status--compact" : ""} ${pill ? "status--pill" : ""}`} title={statusLabel[normalized]} aria-label={statusLabel[normalized]}>
+    <span className={`status status--${normalized} ${compact ? "status--compact" : ""} ${pill && !compact ? "status--pill" : ""}`} title={statusLabel[normalized]} aria-label={statusLabel[normalized]}>
       <Icon size={compact ? 13 : 16} /> {!compact && statusLabel[normalized]}
     </span>
   );
@@ -278,7 +277,7 @@ function Runs() {
   };
   return <DataPage kicker="Histórico de orquestração" title="Execuções do pipeline">
     {error && <p className="inline-error" role="alert">{error}</p>}
-    {!rows.length && !error ? <Empty>Nenhuma execução registrada.</Empty> : <div className="run-list" role="list">{rows.map((row, i) => <button type="button" role="listitem" key={String(row.run_id)} onClick={() => void open(row.run_id)}><span>{String(i + 1).padStart(2, "0")}</span><div><strong>{formatDate(row.started_at)}</strong><small>{triggerLabel(row.trigger_type)}</small></div><b><small>Duração</small>{duration(row.duration_seconds)}</b><StatusMark status={String(row.status) as Status} /><span className="details-label">Ver detalhes</span></button>)}</div>}
+    {!rows.length && !error ? <Empty>Nenhuma execução registrada.</Empty> : <div className="run-list" role="list">{rows.map((row, i) => <button type="button" role="listitem" key={String(row.run_id)} onClick={() => void open(row.run_id)}><span>{String(i + 1).padStart(2, "0")}</span><div><strong>{formatDate(row.started_at)}</strong><small>{triggerLabel(row.trigger_type)}</small></div><b><small>Duração</small>{duration(row.duration_seconds)}</b><StatusMark status={String(row.status) as Status} /><span className="details-label">Ver detalhes <ArrowRight size={13} aria-hidden="true" /></span></button>)}</div>}
     {selected && <RunPanel data={selected} onClose={() => setSelected(null)} />}
   </DataPage>;
 }
@@ -324,7 +323,7 @@ function Quality() {
   return <DataPage kicker="Resultados persistidos do dbt" title="Qualidade dos dados">
     {error && <p className="inline-error" role="alert">{error}</p>}
     <div className="quality-totals"><strong>{number(data?.total)}<small>testes</small></strong><span>{number(data?.passed)} aprovados</span><span>{number(data?.warnings)} avisos</span><span className="coral">{number(data?.failed)} falhas</span><small>Última execução: {formatDate(data?.last_run_at)}</small></div>
-    {!rows.length && !error ? <Empty>Ainda não existem execuções de testes dbt registradas.</Empty> : <div className="table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Severidade</th><th>Registros inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.test_unique_id)}><td><strong>{String(row.test_name)}</strong><small title={String(row.message || "")}>{String(row.message || "Sem mensagem")}</small></td><td><TestTypeMark type={row.test_type} /></td><td><SeverityMark severity={row.severity} /></td><td>{number(row.failed_records)}</td><td>{duration(row.execution_seconds)}</td><td><StatusMark status={row.status as Status} pill /></td><td><button className="text-button" onClick={() => void openEvidence(row)}>Ver evidências</button></td></tr>)}</tbody></table></div>}
+    {!rows.length && !error ? <Empty>Ainda não existem execuções de testes dbt registradas.</Empty> : <div className="table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Em caso de falha</th><th>Registros inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.test_unique_id)}><td><strong>{String(row.test_name)}</strong><small title={String(row.message || "")}>{String(row.message || "Sem mensagem")}</small></td><td><TestTypeMark type={row.test_type} /></td><td><FailurePolicyMark severity={row.severity} /></td><td>{number(row.failed_records)}</td><td>{duration(row.execution_seconds)}</td><td><StatusMark status={row.status as Status} pill /></td><td><button className="action-button" onClick={() => void openEvidence(row)}>Ver evidências <ArrowRight size={13} aria-hidden="true" /></button></td></tr>)}</tbody></table></div>}
     {evidence && <EvidencePanel rows={evidence} onClose={() => setEvidence(null)} />}
   </DataPage>;
 }

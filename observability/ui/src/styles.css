@@ -12,7 +12,6 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 
 /* Demo environment and interactive pipeline stages */
 .topbar{display:flex}.demo-badge{border:1px solid var(--blue);border-radius:999px;padding:6px 10px;color:var(--blue);background:var(--paper);font-size:9px}.stage{cursor:pointer;width:100%}
-.severity{display:inline-flex;align-items:center;gap:6px;width:max-content;border:1px solid currentColor;border-radius:999px;padding:5px 8px;font:600 9px 'IBM Plex Mono';letter-spacing:.04em;text-transform:uppercase}.severity--error{color:var(--coral);background:#fae0d7}.severity--warning{color:var(--warning);background:#fff1c9}
 .test-type{display:inline-flex;align-items:center;gap:6px;width:max-content;border:1px solid currentColor;border-radius:999px;padding:5px 8px;font:600 9px 'IBM Plex Mono';letter-spacing:.04em;text-transform:uppercase}.test-type--generic{color:var(--blue);background:var(--blue-soft)}.test-type--singular{color:var(--blue-dark);background:transparent}
 .status--unmonitored.status--compact{background:transparent;border:2px dashed #777;color:#555}.definition-list .path-value{max-width:65%;overflow-wrap:anywhere;text-align:right;font:500 10px/1.5 'IBM Plex Mono';color:var(--muted)}
 .metric--history{display:flex;flex-direction:column}.metric--history>p{margin-bottom:12px}.run-chart{height:74px;display:flex;align-items:flex-end;gap:4px;border-bottom:1px solid var(--blue);padding:0 2px}.run-chart__bar{position:relative;flex:1;min-width:5px;max-width:18px;background:var(--blue);border-radius:4px 4px 0 0;transition:opacity .15s}.run-chart__bar:hover{opacity:.72}.run-chart__bar--failed{background:var(--coral)}.run-chart__bar--warning{background:#d29b2c}.run-chart__bar--running{background:var(--blue-soft)}.run-chart__bar i{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--paper);color:inherit}.run-chart__bar--success i{color:var(--blue)}.run-chart__bar--failed i{color:var(--coral)}.run-chart__bar--warning i{color:var(--warning)}.run-chart__bar--running i{color:var(--blue)}
@@ -20,7 +19,6 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 
 /* Attention states use the same beige as the page background. */
 .status--warning.status--compact{background:var(--cream);color:var(--warning);box-shadow:inset 0 0 0 1px currentColor}
-.severity--warning{background:var(--cream)}
 .run-chart__bar--warning{background:var(--warning);box-shadow:none}
 
 /* Functional palette: blue remains structural; green is reserved for success. */
@@ -28,8 +26,14 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 .metric--quality strong{display:flex;align-items:baseline;gap:7px}.metric--quality strong b{color:var(--muted);font:400 .65em 'IBM Plex Mono',monospace}.metric--quality .metric__failed{color:var(--coral)}
 .run-chart__legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px;color:var(--muted);font:500 8px 'IBM Plex Mono',monospace;text-transform:uppercase}.run-chart__legend span{display:inline-flex;align-items:center;gap:4px}.run-chart__legend span:before{content:"";width:6px;height:6px;border-radius:2px;background:var(--blue)}.run-chart__legend .is-warning:before{background:var(--warning)}.run-chart__legend .is-failed:before{background:var(--coral)}
 
-/* Quality table pills follow the functional design-system palette. */
+/* Status pills follow the functional design-system palette across pages. */
 .status--pill{border:1px solid currentColor;border-radius:999px;padding:5px 8px}
-.status--success.status--pill{background:#e2eee9}.status--warning.status--pill{background:#f6e7df}.status--failed.status--pill{background:#fbe3de}.status--running.status--pill{background:#e4eaf2}.status--not_started.status--pill,.status--not_applicable.status--pill,.status--unmonitored.status--pill{background:#eceae4;color:var(--muted)}
+.status--success.status--pill{background:#e2eee9}.status--warning.status--pill{background:#f6e7df}.status--failed.status--pill{background:#fbe3de}.status--running.status--pill{background:#e4eaf2}.status--blocked.status--pill,.status--not_started.status--pill,.status--not_applicable.status--pill,.status--unmonitored.status--pill{background:#eceae4;color:var(--muted)}
 .test-type--generic,.test-type--singular{color:var(--muted);background:#eceae4}
-.severity--error{background:#fbe3de}.severity--warning{background:#f6e7df}
+.failure-policy{display:inline-flex;width:max-content;border:1px solid var(--muted);border-radius:999px;padding:5px 8px;background:#eceae4;color:var(--muted);font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.04em;text-transform:uppercase}
+
+/* Detail actions must read as interactive controls, not table labels. */
+.action-button,.details-label{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:max-content;min-height:30px;border:1px solid var(--blue);border-radius:3px;padding:7px 10px;background:var(--paper);color:var(--blue);font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;transition:background .15s,color .15s,transform .15s}
+.action-button:hover,.run-list button:hover .details-label{background:var(--blue);color:var(--paper);transform:translateY(-1px)}
+.action-button:active,.run-list button:active .details-label{transform:translateY(0)}
+.run-list button{grid-template-columns:55px minmax(180px,1fr) 120px 130px 120px}
