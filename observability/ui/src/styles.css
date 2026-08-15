@@ -38,3 +38,4 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 .action-button:active,.run-list button:active .details-label{transform:translateY(0)}
 .run-list button{grid-template-columns:55px minmax(180px,1fr) 120px 175px 120px}
 .run-diagnosis--warning{border-color:var(--warning);background:#f6e7df;color:var(--warning)}
+.page-title h1{font-size:clamp(38px,5vw,64px);line-height:.92}

@@ -308,6 +308,7 @@ function RunPanel({ data, onClose }: { data: Record<string, unknown>; onClose: (
     if (relatedStatuses.some((status) => ["error", "fail", "failed", "runtime error"].includes(status))) return { status: "failed", label: "Falha de qualidade" };
     if (relatedStatuses.some((status) => ["warn", "warning"].includes(status))) return { status: "warning", label: "Processado com aviso" };
     if (["failed", "blocked", "not_started"].includes(dataset.status)) return { status: "not_started", label: "Não processada" };
+    if (failed && failureScope === "orchestration" && dataset.status === "success") return { status: "success", label: "Processado" };
     return { status: dataset.status };
   };
   return <div className="scrim" onMouseDown={onClose}><aside className="panel dataset-panel" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Detalhes da execução">
@@ -316,7 +317,7 @@ function RunPanel({ data, onClose }: { data: Record<string, unknown>; onClose: (
     <dl className="definition-list"><div><dt>Início</dt><dd>{formatDate(data.started_at)}</dd></div><div><dt>Término</dt><dd>{formatDate(data.finished_at)}</dd></div><div><dt>Tipo</dt><dd>{triggerLabel(data.trigger_type)}</dd></div><div><dt>Duração total</dt><dd>{duration(data.duration_seconds)}</dd></div></dl>
     {diagnosis ? <section className={`run-diagnosis ${warning ? "run-diagnosis--warning" : ""}`} role="alert"><AlertTriangle size={20} /><div><strong>{failureScope === "quality" ? warning ? "Atenção em testes dbt" : "Falha em testes dbt" : failureScope === "dataset" ? "Falha no processamento" : "Falha de orquestração"}</strong><p>{diagnosis}</p></div></section> : null}
     {failedTests.length ? <><h3>Testes com ocorrência</h3><ul className="evidence-list evidence-list--issues">{failedTests.map((test) => <li key={String(test.test_name)}><span><strong>{String(test.test_name)}</strong><small>{String(test.error_message || "Sem mensagem registrada")}</small></span><StatusMark status={test.status as Status} /></li>)}</ul></> : null}
-    <h3>{failedDatasets.length ? "Datasets afetados" : "Datasets processados"}</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => { const presentation = datasetPresentation(dataset); return <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={presentation.status} label={presentation.label} /></li>; })}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
+    <h3>{failed && failureScope === "orchestration" ? "Datasets concluídos antes da falha" : failedDatasets.length ? "Datasets afetados" : "Datasets processados"}</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => { const presentation = datasetPresentation(dataset); return <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={presentation.status} label={presentation.label} /></li>; })}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
   </aside></div>;
 }
 
