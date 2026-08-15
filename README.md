@@ -4,6 +4,8 @@ Plataforma analítica desenvolvida como projeto de portfólio para demonstrar, d
 
 O projeto transforma dados operacionais do Adventure Works em modelos analíticos confiáveis, documentados e preparados para consumo por ferramentas de BI.
 
+**Demo pública do Control Center:** [modern-data-platform.vercel.app](https://modern-data-platform.vercel.app)
+
 ## Visão geral
 
 O cenário simula uma empresa que depende diretamente de um banco transacional para produzir relatórios. Essa abordagem gera consultas lentas, métricas inconsistentes e forte dependência da estrutura operacional.
@@ -98,6 +100,7 @@ principalmente oportunidades de documentação e desacoplamento gradual.
 | Versionamento | Git e GitHub |
 | Documentação | Markdown, Mermaid e dbt Docs |
 | Observabilidade web | React, TypeScript e FastAPI |
+| Hospedagem da demo | Vercel |
 
 # Orquestração com Apache Airflow
 
@@ -349,9 +352,14 @@ PostgreSQL depois que o respectivo snapshot foi armazenado com sucesso.
 
 ### Data Platform Control Center
 
-A interface unificada de observabilidade está disponível em
-`http://localhost:3000`, com a API REST em `http://localhost:8000`. Ela consolida
-os sinais operacionais preservados no schema `observability` e oferece:
+A interface unificada de observabilidade possui dois modos de execução:
+
+| Ambiente | Endereço | Fonte dos dados |
+| --- | --- | --- |
+| Demo pública | [modern-data-platform.vercel.app](https://modern-data-platform.vercel.app) | Dados coerentes e pré-carregados no frontend |
+| Operacional local | `http://localhost:3000` | API REST em `http://localhost:8000` e schema `observability` do PostgreSQL Warehouse |
+
+Ambos oferecem:
 
 - status geral e tracker da execução mais recente;
 - jornada de ingestão por dataset, incluindo objeto MinIO e contagens;
@@ -360,13 +368,40 @@ os sinais operacionais preservados no schema `observability` e oferece:
 - resultados e falhas dos testes dbt;
 - visão consolidada de incidentes.
 
+#### Ambiente demonstrativo
+
+A versão hospedada na Vercel é uma demonstração autocontida e somente de
+leitura. Todas as páginas e interações funcionam sem conexão com PostgreSQL,
+Airflow, MinIO ou dbt reais. A interface identifica discretamente esse modo
+como **Ambiente demonstrativo**.
+
+O frontend ativa os dados pré-carregados quando `VITE_DEMO_MODE=true` ou,
+durante um build de produção, quando `VITE_API_URL` não está definida. Os dados
+de exemplo ficam em `observability/ui/src/demo-data.ts` e não representam o
+estado atual da execução local.
+
+O deploy é configurado por `vercel.json`. O projeto da Vercel está conectado ao
+repositório GitHub: branches e pull requests geram previews, e alterações
+incorporadas à branch `main` geram um novo deploy de produção automaticamente.
+
+#### Ambiente operacional local
+
+No ambiente local, o frontend usa `http://localhost:8000` como API padrão e
+consolida os sinais operacionais preservados no schema `observability`. Para
+reconstruir a imagem do painel depois de alterar o frontend, execute:
+
+```bash
+docker compose up -d --build observability-ui
+```
+
 A interface é uma camada de diagnóstico e drill-down. Airflow continua sendo o
 orquestrador, MinIO permanece como console de objetos e dbt é a fonte dos
 resultados de qualidade. A API expõe os principais recursos em `/api`, e a
 documentação interativa fica em `http://localhost:8000/docs`.
 
-Toda informação exibida possui origem persistida no PostgreSQL Warehouse. A
-telemetria segue o mesmo `run_id` do Airflow e é centralizada em:
+No ambiente operacional local, toda informação exibida possui origem persistida
+no PostgreSQL Warehouse. A telemetria segue o mesmo `run_id` do Airflow e é
+centralizada em:
 
 | Tabela | Origem | Conteúdo |
 | --- | --- | --- |
