@@ -139,7 +139,7 @@ function DatasetTable({ rows, onSelect }: { rows: DatasetRun[]; onSelect: (datas
       {!filtered.length ? <Empty>Nenhum dataset registrado nesta execução.</Empty> : (
         <div className="table-wrap"><table><thead><tr><th>Dataset</th><th>Origem</th><th>MinIO</th><th>Raw</th><th>Staging</th><th>Intermediate</th><th>Analytics</th><th>Power BI</th><th>Linhas</th><th>Status</th></tr></thead>
           <tbody>{filtered.map((row) => <tr key={row.dataset}>
-            <td><button className="dataset-link" onClick={() => onSelect(row.dataset)}><strong>{row.dataset}</strong><small>{row.minio_object || "sem objeto"}</small></button></td>
+            <td><button className="dataset-link" onClick={() => onSelect(row.dataset)}><strong>{row.dataset}</strong></button></td>
             {(["source", "minio", "raw", "staging", "intermediate", "analytics", "powerbi"] as const).map((stage) => <td key={stage}><StatusMark status={row.stages?.[stage] || "not_started"} compact /></td>)}
             <td>{number(row.raw_row_count)}</td><td><StatusMark status={row.status} /></td>
           </tr>)}</tbody></table></div>
@@ -165,7 +165,7 @@ function DatasetPanel({ data, onClose }: { data: Record<string, unknown>; onClos
     <button className="icon-button panel__close" onClick={onClose}><X /></button>
     <p className="kicker">Jornada do dataset / evidência mais recente</p><h2>{String(data.dataset)}</h2>
     <div className="dataset-journey">{journey.map(([label, status, note], index) => <div key={label}><article><StatusMark status={status} compact /><span><strong>{label}</strong><small>{note}</small></span></article>{index < journey.length - 1 && <ArrowDown />}</div>)}</div>
-    <dl className="definition-list"><div><dt>{freshness.freshness_type === "business" ? "Idade do último evento" : "Atualização técnica"}</dt><dd>{relativeDuration(freshness.age_seconds)}</dd></div><div><dt>Última carga</dt><dd>{formatDate(ingestion.finished_at)}</dd></div><div><dt>Tamanho do Parquet</dt><dd>{ingestion.file_size_bytes ? `${(Number(ingestion.file_size_bytes) / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div></dl>
+    <dl className="definition-list"><div><dt>{freshness.freshness_type === "business" ? "Idade do último evento" : "Atualização técnica"}</dt><dd>{relativeDuration(freshness.age_seconds)}</dd></div><div><dt>Última carga</dt><dd>{formatDate(ingestion.finished_at)}</dd></div><div><dt>Localização do arquivo</dt><dd className="path-value">{String(ingestion.minio_object || "—")}</dd></div><div><dt>Tamanho do Parquet</dt><dd>{ingestion.file_size_bytes ? `${(Number(ingestion.file_size_bytes) / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div></dl>
   </aside></div>;
 }
 
@@ -287,7 +287,7 @@ function Incidents() {
 
 function EditorialTable({ rows, columns, labels }: { rows: Record<string, unknown>[]; columns: string[]; labels: string[] }) {
   if (!rows.length) return <Empty>Nenhum dado disponível para esta visão.</Empty>;
-  return <div className="table-wrap"><table><thead><tr>{labels.map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column}>{column.includes("at") ? formatDate(row[column]) : column.includes("seconds") ? duration(row[column]) : column === "status" ? <StatusMark status={(row[column] || "not_started") as Status} /> : String(row[column] ?? "—")}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr>{labels.map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column}>{column.endsWith("_at") ? formatDate(row[column]) : column.endsWith("_seconds") ? duration(row[column]) : column === "status" ? <StatusMark status={(row[column] || "not_started") as Status} /> : String(row[column] ?? "—")}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function DataPage({ kicker, title, children }: { kicker: string; title: string; children: ReactNode }) {

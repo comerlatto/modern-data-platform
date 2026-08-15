@@ -4,6 +4,7 @@ import { duration, formatDate, relativeDuration } from "./formatters.ts";
 
 test("converte UTC para America/Sao_Paulo", () => {
   assert.equal(formatDate("2026-08-14T12:38:42.839087+00:00"), "14/08/2026 às 09:38");
+  assert.equal(formatDate("sales.customer"), "—");
 });
 
 test("formata durações sem acumular minutos", () => {
