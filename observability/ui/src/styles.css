@@ -21,4 +21,5 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 /* Attention states use the same beige as the page background. */
 .status--warning.status--compact{background:var(--cream);color:var(--warning);box-shadow:inset 0 0 0 1px currentColor}
 .severity--warning{background:var(--cream)}
-.run-chart__bar--warning{background:var(--cream);box-shadow:inset 0 0 0 1px var(--warning)}
+.run-chart__bar--warning{background:#db967a;box-shadow:none}
+.run-chart__bar--warning i{background:var(--paper);color:#db967a}
