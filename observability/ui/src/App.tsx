@@ -4,7 +4,7 @@ import {
   Database, EyeOff, Gauge, HardDrive, Menu, Minus, RefreshCw, Search,
   ShieldCheck, X,
 } from "lucide-react";
-import { api } from "./api";
+import { api, isDemo } from "./api";
 import { duration, formatDate, number, relativeDuration } from "./formatters";
 import type { DatasetRun, PlatformStatus, Stage, Status } from "./types";
 
@@ -66,20 +66,21 @@ function Metric({ eyebrow, value, note, accent }: { eyebrow: string; value: stri
 }
 
 function Tracker({ stages }: { stages: Stage[] }) {
+  const [selected, setSelected] = useState<Stage | null>(null);
   return (
-    <div className="tracker" aria-label="Etapas da execução">
+    <><div className="tracker" aria-label="Etapas da execução">
       {stages.map((stage, index) => (
         <div className="tracker__segment" key={stage.id}>
-          <article className={`stage stage--${stage.status}`}>
+          <button className={`stage stage--${stage.status}`} onClick={() => setSelected(stage)} aria-label={`Abrir detalhes de ${stage.label}`}>
             <span className="stage__number">0{index + 1}</span>
             <span className="stage__icon"><StatusMark status={stage.status} compact /></span>
             <strong>{stage.label}</strong>
             <small>{statusLabel[stage.status]}</small>
-          </article>
+          </button>
           {index < stages.length - 1 && <div className="tracker__line" />}
         </div>
       ))}
-    </div>
+    </div>{selected && <StagePanel stage={selected} onClose={() => setSelected(null)} />}</>
   );
 }
 
@@ -97,8 +98,7 @@ function StagePanel({ stage, onClose }: { stage: Stage; onClose: () => void }) {
           <div><dt>Duração</dt><dd>{duration(stage.duration_seconds)}</dd></div>
           <div><dt>Dependência</dt><dd>{stage.status === "not_started" ? "Aguardando etapa anterior" : "Verificada"}</dd></div>
         </dl>
-        <p className="panel__note">Os detalhes exibidos são consolidados pela API de observabilidade. Use Airflow ou MinIO para inspeção operacional de baixo nível.</p>
-        <div className="tool-links"><a href="http://localhost:8080" target="_blank" rel="noreferrer">View Airflow Run</a><a href="http://localhost:9001" target="_blank" rel="noreferrer">View MinIO Objects</a></div>
+        <p className="panel__note">{isDemo ? "Esta amostra representa as evidências consolidadas de uma execução típica da plataforma." : "Os detalhes exibidos são consolidados pela API de observabilidade. Use Airflow ou MinIO para inspeção operacional de baixo nível."}</p>
       </aside>
     </div>
   );
@@ -287,10 +287,10 @@ export default function App() {
     <aside className={`sidebar ${menu ? "sidebar--open" : ""}`}>
       <div className="brand"><span>MDP</span><strong>CONTROL<br />CENTER</strong></div>
       <nav>{(Object.keys(labels) as Page[]).map((key, index) => <button className={page === key ? "active" : ""} key={key} onClick={() => { setPage(key); setMenu(false); }}><span>0{index + 1}</span>{labels[key]}</button>)}</nav>
-      <div className="sidebar__foot"><Activity size={17} /><span>Operational layer<br /><b>Local environment</b></span></div>
+      <div className="sidebar__foot"><Activity size={17} /><span>Operational layer<br /><b>{isDemo ? "Ambiente demonstrativo" : "Ambiente local"}</b></span></div>
     </aside>
     <main>
-      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenu(!menu)} aria-label={menu ? "Fechar menu" : "Abrir menu"} aria-expanded={menu}><Menu /></button><span>AdventureWorks · Observabilidade</span></header>
+      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenu(!menu)} aria-label={menu ? "Fechar menu" : "Abrir menu"} aria-expanded={menu}><Menu /></button><span>AdventureWorks · Observabilidade</span>{isDemo && <span className="demo-badge">Ambiente demonstrativo</span>}</header>
       <div className="content">{page === "overview" ? <Overview /> : page === "runs" ? <Runs /> : page === "freshness" ? <Freshness /> : page === "quality" ? <Quality /> : <Incidents />}</div>
       <footer><span>Modern Data Platform / Observability</span><span>PostgreSQL · MinIO · dbt · Airflow</span></footer>
     </main>

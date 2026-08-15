@@ -31,3 +31,5 @@ observability/ui/*.tsbuildinfo
 !airflow/logs/
 airflow/logs/*
 !airflow/logs/.gitkeep
+
+.vercel
