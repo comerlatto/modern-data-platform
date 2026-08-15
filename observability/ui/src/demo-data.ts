@@ -42,7 +42,15 @@ export const demo = {
 export function demoRun(runId: string) {
   const run = demo.runs.find((item) => item.run_id === runId) || demo.runs[0];
   const failed = run.status === "failed";
-  return { ...run, datasets: demoDatasets, failure_scope: failed ? "orchestration" : null, error_message: failed ? "A tarefa de consolidação do pipeline foi encerrada pelo Airflow após exceder o tempo limite." : null, failed_tests: [] };
+  const warning = run.status === "warning";
+  const warningTest = qualityResults.find((test) => test.status === "warn");
+  return {
+    ...run,
+    datasets: demoDatasets,
+    failure_scope: failed ? "orchestration" : warning ? "quality" : null,
+    error_message: failed ? "A tarefa de consolidação do pipeline foi encerrada pelo Airflow após exceder o tempo limite." : null,
+    failed_tests: warning && warningTest ? [{ ...warningTest, error_message: warningTest.message }] : [],
+  };
 }
 export function demoDataset(name: string) { const row = demoDatasets.find((item) => item.dataset === name) || demoDatasets[0]; return { dataset: row.dataset, ingestion: row, freshness: { freshness_type: row.dataset.startsWith("sales") ? "business" : "technical", age_seconds: 2820 }, stages: row.stages }; }
 export const demoEvidence = [{ sales_order_id: 75123, status: "Archived" }, { sales_order_id: 75187, status: "Archived" }, { sales_order_id: 75201, status: "Archived" }];

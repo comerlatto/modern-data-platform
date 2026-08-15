@@ -37,3 +37,4 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 .action-button:hover,.run-list button:hover .details-label{background:var(--blue);color:var(--paper);transform:translateY(-1px)}
 .action-button:active,.run-list button:active .details-label{transform:translateY(0)}
 .run-list button{grid-template-columns:55px minmax(180px,1fr) 120px 130px 120px}
+.run-diagnosis--warning{border-color:var(--warning);background:#f6e7df;color:var(--warning)}

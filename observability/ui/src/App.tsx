@@ -287,16 +287,22 @@ function RunPanel({ data, onClose }: { data: Record<string, unknown>; onClose: (
   const failedDatasets = datasets.filter((dataset) => dataset.status === "failed");
   const failedTests = (data.failed_tests || []) as Record<string, unknown>[];
   const failed = String(data.status).toLowerCase() === "failed";
+  const warning = String(data.status).toLowerCase() === "warning";
   const failureScope = String(data.failure_scope || "");
+  const testNames = failedTests.map((test) => String(test.test_name || "Teste sem nome")).join(", ");
+  const invalidRecords = failedTests.reduce((total, test) => total + (Number(test.failed_records) || 0), 0);
+  const qualityDiagnosis = failedTests.length === 1
+    ? `O teste dbt ${testNames} ${warning ? "gerou um aviso" : "registrou uma falha"} nesta execução${invalidRecords ? `, com ${number(invalidRecords)} registro(s) inválido(s)` : ""}.`
+    : `${failedTests.length} testes dbt registraram ocorrências nesta execução: ${testNames}.`;
   const diagnosis = data.error_message ? String(data.error_message) :
-    failureScope === "quality" ? `${failedTests.length} teste(s) dbt registraram erro ou aviso nesta execução.` :
+    failureScope === "quality" ? qualityDiagnosis :
     failureScope === "dataset" ? `${failedDatasets.length} dataset(s) não concluíram o processamento.` :
     failed ? "A execução foi encerrada com falha na orquestração. Todos os datasets listados concluíram saudáveis e nenhuma mensagem técnica foi registrada; consulte o log desta run no Airflow." : "";
   return <div className="scrim" onMouseDown={onClose}><aside className="panel dataset-panel" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Detalhes da execução">
     <button className="icon-button panel__close" onClick={onClose} aria-label="Fechar"><X /></button>
     <p className="kicker">Evidências da execução</p><h2>{formatDate(data.started_at)}</h2><StatusMark status={data.status as Status} />
     <dl className="definition-list"><div><dt>Início</dt><dd>{formatDate(data.started_at)}</dd></div><div><dt>Término</dt><dd>{formatDate(data.finished_at)}</dd></div><div><dt>Tipo</dt><dd>{triggerLabel(data.trigger_type)}</dd></div><div><dt>Duração total</dt><dd>{duration(data.duration_seconds)}</dd></div></dl>
-    {diagnosis ? <section className="run-diagnosis" role="alert"><AlertTriangle size={20} /><div><strong>{failureScope === "quality" ? "Falha em testes dbt" : failureScope === "dataset" ? "Falha no processamento" : "Falha de orquestração"}</strong><p>{diagnosis}</p></div></section> : null}
+    {diagnosis ? <section className={`run-diagnosis ${warning ? "run-diagnosis--warning" : ""}`} role="alert"><AlertTriangle size={20} /><div><strong>{failureScope === "quality" ? warning ? "Atenção em testes dbt" : "Falha em testes dbt" : failureScope === "dataset" ? "Falha no processamento" : "Falha de orquestração"}</strong><p>{diagnosis}</p></div></section> : null}
     {failedTests.length ? <><h3>Testes com ocorrência</h3><ul className="evidence-list evidence-list--issues">{failedTests.map((test) => <li key={String(test.test_name)}><span><strong>{String(test.test_name)}</strong><small>{String(test.error_message || "Sem mensagem registrada")}</small></span><StatusMark status={test.status as Status} /></li>)}</ul></> : null}
     <h3>{failedDatasets.length ? "Datasets afetados" : "Datasets processados"}</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={dataset.status} /></li>)}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
   </aside></div>;
