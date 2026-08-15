@@ -284,6 +284,8 @@ models:
                   - Europe
                   - North America
                   - Pacific
+              config:
+                severity: warn
 
       - name: row_guid
         description: Identificador global do registro no sistema de origem.

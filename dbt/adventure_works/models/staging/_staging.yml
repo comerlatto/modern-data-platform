@@ -84,6 +84,8 @@ models:
           - accepted_values:
               arguments:
                 values: ['EM', 'GC', 'IN', 'SC', 'SP', 'VC']
+              config:
+                severity: warn
 
       - name: first_name
         description: Primeiro nome da pessoa.
@@ -397,6 +399,8 @@ models:
           - accepted_values:
               arguments:
                 values: ['M', 'S']
+              config:
+                severity: warn
 
       - name: gender
         description: >
@@ -407,6 +411,8 @@ models:
           - accepted_values:
               arguments:
                 values: ['F', 'M']
+              config:
+                severity: warn
 
       - name: hire_date
         description: Data de contratação do funcionário.
