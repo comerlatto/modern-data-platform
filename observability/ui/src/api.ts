@@ -19,6 +19,6 @@ export const api = {
   dataset: (name: string) => isDemo ? mock(demoDataset(name)) : request<Record<string, unknown>>(`/api/datasets/${encodeURIComponent(name)}`),
   freshness: () => isDemo ? mock(demo.freshness) : request<Record<string, unknown>[]>("/api/freshness"),
   quality: () => isDemo ? mock(demo.quality) : request<Record<string, unknown>>("/api/data-quality"),
-  qualityEvidence: (invocationId: string, testId: string) => isDemo ? mock(testId.endsWith("4") ? demoEvidence : []) : request<Record<string, unknown>[]>(`/api/data-quality/${encodeURIComponent(invocationId)}/${encodeURIComponent(testId)}/evidence`),
+  qualityEvidence: (invocationId: string, testId: string) => isDemo ? mock(testId.endsWith("4") || testId.endsWith("dataset.2") ? demoEvidence : []) : request<Record<string, unknown>[]>(`/api/data-quality/${encodeURIComponent(invocationId)}/${encodeURIComponent(testId)}/evidence`),
   incidents: () => isDemo ? mock(demo.incidents) : request<Record<string, unknown>[]>("/api/incidents"),
 };

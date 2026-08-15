@@ -417,10 +417,17 @@ def dataset_detail(dataset: str) -> dict[str, Any]:
     )
     tests = fetch_all(
         """
-        select invocation_id, test_unique_id, test_name, test_type, severity,
-               status, failures, message, execution_seconds
-        from observability.dbt_test_results
-        where depends_on::text ilike %s order by invocation_id desc
+        select * from (
+            select distinct on (t.test_unique_id)
+                   t.invocation_id, t.test_unique_id, t.test_name, t.test_type,
+                   t.severity, t.status, t.failures, t.message,
+                   t.execution_seconds
+            from observability.dbt_test_results t
+            join observability.dbt_runs r using (invocation_id)
+            where t.depends_on::text ilike %s
+            order by t.test_unique_id, r.collected_at desc
+        ) latest
+        order by status desc, test_name
         limit 50
         """,
         (f"%{dataset.split('.')[-1]}%",),

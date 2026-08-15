@@ -18,6 +18,24 @@ const qualityResults = [
   ["relationships_sales_customer", "relationships", "error", 0, "pass"], ["accepted_values_order_status", "accepted_values", "warn", 3, "warn"],
 ].map(([name, type, severity, failed, status], index) => ({ invocation_id: "demo-dbt-20260815", test_unique_id: `test.demo.${index + 1}`, test_name: name, test_type: type, severity, failed_records: failed, execution_seconds: 0.42 + index * 0.17, status, depends_on: name === "accepted_values_order_status" ? ["source.adventure_works.sales.salesorderheader"] : [], message: failed ? "3 pedidos históricos usam um status legado já mapeado." : "Teste concluído sem registros inválidos." }));
 
+const demoDatasetTests = [
+  ["salesorderheader", "not_null_salesorderheader_salesorderid", "not_null", "error", 0, "pass"],
+  ["salesorderheader", "accepted_values_order_status", "accepted_values", "warn", 3, "warn"],
+  ["salesorderdetail", "not_null_salesorderdetail_salesorderdetailid", "not_null", "error", 0, "pass"],
+  ["salesorderdetail", "relationships_salesorderdetail_salesorderid", "relationships", "error", 0, "pass"],
+  ["customer", "not_null_customer_customerid", "not_null", "error", 0, "pass"],
+  ["customer", "unique_customer_customerid", "unique", "error", 0, "pass"],
+  ["product", "not_null_product_productid", "not_null", "error", 0, "pass"],
+  ["product", "unique_product_productid", "unique", "error", 0, "pass"],
+  ["address", "not_null_address_addressid", "not_null", "error", 0, "pass"],
+  ["address", "unique_address_addressid", "unique", "error", 0, "pass"],
+].map(([dataset, name, type, severity, failed, status], index) => ({
+  dataset, invocation_id: "demo-dbt-20260815", test_unique_id: `test.demo.dataset.${index + 1}`,
+  test_name: name, test_type: type, severity, failed_records: failed,
+  execution_seconds: 0.31 + index * 0.06, status,
+  message: failed ? "3 pedidos históricos usam um status legado já mapeado." : "Teste concluído sem registros inválidos.",
+}));
+
 export const demo = {
   status: { platform_status: "success", run_id: latestRun, trigger_type: "scheduled", last_successful_run: "2026-08-15T09:08:42-03:00", pipeline_duration_seconds: 522, technical_freshness_seconds: 2_820, last_business_event_at: "2026-08-14T17:48:19-03:00", tests: { passed: 27, total: 28 }, failed_pipelines: 0, datasets_impacted: 0,
     stages: [["ingestion", "Ingestão", 174], ["freshness", "Freshness", 21], ["staging", "Staging", 66], ["intermediate", "Intermediate", 72], ["analytics", "Analytics", 103], ["tests", "Testes dbt", 48], ["powerbi", "Power BI", 0]].map(([id, label, seconds]) => ({ id: String(id), label: String(label), status: id === "powerbi" ? "unmonitored" : "success", completed_at: id === "powerbi" ? undefined : "2026-08-15T09:08:42-03:00", duration_seconds: Number(seconds) })),
@@ -52,5 +70,5 @@ export function demoRun(runId: string) {
     failed_tests: warning && warningTest ? [{ ...warningTest, error_message: warningTest.message }] : [],
   };
 }
-export function demoDataset(name: string) { const row = demoDatasets.find((item) => item.dataset === name) || demoDatasets[0]; const tests = qualityResults.filter((test) => JSON.stringify(test.depends_on).toLowerCase().includes(row.dataset.toLowerCase())); return { dataset: row.dataset, ingestion: row, freshness: { freshness_type: row.dataset.startsWith("sales") ? "business" : "technical", age_seconds: 2820 }, stages: row.stages, tests }; }
+export function demoDataset(name: string) { const row = demoDatasets.find((item) => item.dataset === name) || demoDatasets[0]; const tests = demoDatasetTests.filter((test) => test.dataset === row.dataset); return { dataset: row.dataset, ingestion: row, freshness: { freshness_type: row.dataset.startsWith("sales") ? "business" : "technical", age_seconds: 2820 }, stages: row.stages, tests }; }
 export const demoEvidence = [{ sales_order_id: 75123, status: "Archived" }, { sales_order_id: 75187, status: "Archived" }, { sales_order_id: 75201, status: "Archived" }];
