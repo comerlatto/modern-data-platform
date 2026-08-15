@@ -122,7 +122,7 @@ function Tracker({ stages }: { stages: Stage[] }) {
         <div className="tracker__segment" key={stage.id}>
           <button className={`stage stage--${stage.status}`} onClick={() => setSelected(stage)} aria-label={`Abrir detalhes de ${stage.label}`}>
             <span className="stage__number">0{index + 1}</span>
-            <span className="stage__icon"><StatusMark status={stage.status} compact /></span>
+            <span className="stage__icon"><span className={`stage__dot stage__dot--${stage.status}`} aria-hidden="true" /></span>
             <strong>{stage.label}</strong>
             <small>{statusLabel[stage.status]}</small>
           </button>
@@ -280,7 +280,7 @@ function Overview() {
   return <>
     <section className="hero">
       <div><h1>Modern Data<br /><em>Platform</em></h1></div>
-      <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><strong>{data.platform_status === "warning" ? "SAUDÁVEL COM RESSALVA" : statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
+      <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><strong>{data.platform_status === "warning" ? "PROCESSADO COM AVISO" : statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
     </section>
     <div className="metrics">
       <Metric eyebrow="Última execução bem-sucedida" value={formatDate(data.last_successful_run)} note="Horário de Brasília" />
