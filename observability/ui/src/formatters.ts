@@ -8,6 +8,15 @@ export function formatDate(value: unknown) {
   }).format(date).replace(",", " às");
 }
 
+export function formatTime(value: unknown) {
+  if (!value) return "—";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
 export function duration(value: unknown) {
   const preciseSeconds = Number(value || 0);
   if (!Number.isFinite(preciseSeconds) || preciseSeconds <= 0) return "—";

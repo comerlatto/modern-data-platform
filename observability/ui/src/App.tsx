@@ -5,7 +5,7 @@ import {
   FileCheck2, ShieldCheck, X,
 } from "lucide-react";
 import { api, isDemo } from "./api";
-import { duration, formatDate, number, relativeDuration } from "./formatters";
+import { duration, formatDate, formatTime, number, relativeDuration } from "./formatters";
 import type { DatasetRun, PlatformStatus, Stage, Status } from "./types";
 
 const statusLabel: Record<Status, string> = {
@@ -124,7 +124,7 @@ function Tracker({ stages }: { stages: Stage[] }) {
             <span className="stage__number">0{index + 1}</span>
             <span className="stage__icon"><StatusMark status={stage.status} compact /></span>
             <strong>{stage.label}</strong>
-            <small>{statusLabel[stage.status]}</small>
+            <small>{stage.completed_at ? `${formatTime(stage.completed_at)} · ${duration(stage.duration_seconds)}` : statusLabel[stage.status]}</small>
           </button>
           {index < stages.length - 1 && <div className="tracker__line" />}
         </div>
