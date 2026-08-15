@@ -241,6 +241,7 @@ def platform_status() -> dict[str, Any]:
             value = "blocked"
         canonical_stages.append({"id": layer, "label": label, "status": value})
         previous = value
+    canonical_stages.append({"id": "tests", "label": "Testes dbt", "status": dbt_status})
     canonical_stages.append({"id": "powerbi", "label": "Power BI", "status": "unmonitored"})
     critical_statuses = [stage["status"] for stage in canonical_stages if stage["id"] != "powerbi"]
     if pipeline_status == "failed" or "failed" in critical_statuses:

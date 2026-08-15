@@ -117,7 +117,7 @@ function RunDurationChart({ runs }: { runs: Record<string, unknown>[] }) {
 function Tracker({ stages }: { stages: Stage[] }) {
   const [selected, setSelected] = useState<Stage | null>(null);
   return (
-    <><div className="tracker" aria-label="Etapas da execução">
+    <><div className="tracker" style={{ gridTemplateColumns: `repeat(${stages.length}, 1fr)` }} aria-label="Etapas da execução">
       {stages.map((stage, index) => (
         <div className="tracker__segment" key={stage.id}>
           <button className={`stage stage--${stage.status}`} onClick={() => setSelected(stage)} aria-label={`Abrir detalhes de ${stage.label}`}>
@@ -280,7 +280,7 @@ function Overview() {
   return <>
     <section className="hero">
       <div><h1>Modern Data<br /><em>Platform</em></h1></div>
-      <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><strong>{statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
+      <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><strong>{data.platform_status === "warning" ? "SAUDÁVEL COM RESSALVA" : statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
     </section>
     <div className="metrics">
       <Metric eyebrow="Última execução bem-sucedida" value={formatDate(data.last_successful_run)} note="Horário de Brasília" />

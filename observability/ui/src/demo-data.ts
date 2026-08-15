@@ -40,11 +40,11 @@ const demoDatasetTests = [
 }));
 
 export const demo = {
-  status: { platform_status: "success", run_id: latestRun, trigger_type: "scheduled", last_successful_run: "2026-08-15T09:08:42-03:00", pipeline_duration_seconds: 522, technical_freshness_seconds: 2_820, last_business_event_at: "2026-08-14T17:48:19-03:00", tests: { passed: 27, total: 28 }, failed_pipelines: 0, datasets_impacted: 0,
-    stages: [["ingestion", "Ingestão", 174], ["freshness", "Freshness", 21], ["staging", "Staging", 66], ["intermediate", "Intermediate", 72], ["analytics", "Analytics", 103], ["tests", "Testes dbt", 48], ["powerbi", "Power BI", 0]].map(([id, label, seconds]) => ({ id: String(id), label: String(label), status: id === "powerbi" ? "unmonitored" : "success", completed_at: id === "powerbi" ? undefined : "2026-08-15T09:08:42-03:00", duration_seconds: Number(seconds) })),
+  status: { platform_status: "warning", run_id: latestRun, trigger_type: "scheduled", last_successful_run: "2026-08-15T09:08:42-03:00", pipeline_duration_seconds: 522, technical_freshness_seconds: 2_820, last_business_event_at: "2026-08-14T17:48:19-03:00", tests: { passed: 27, total: 28 }, failed_pipelines: 0, datasets_impacted: 0,
+    stages: [["ingestion", "Ingestão", 174], ["freshness", "Freshness", 21], ["staging", "Staging", 66], ["intermediate", "Intermediate", 72], ["analytics", "Analytics", 103], ["tests", "Testes dbt", 48], ["powerbi", "Power BI", 0]].map(([id, label, seconds]) => ({ id: String(id), label: String(label), status: id === "powerbi" ? "unmonitored" : id === "tests" ? "warning" : "success", completed_at: id === "powerbi" ? undefined : "2026-08-15T09:08:42-03:00", duration_seconds: Number(seconds) })),
   } as PlatformStatus,
   runs: [
-    { run_id: latestRun, started_at: "2026-08-15T09:00:00-03:00", finished_at: "2026-08-15T09:08:42-03:00", duration_seconds: 522, status: "success", trigger_type: "scheduled" },
+    { run_id: latestRun, started_at: "2026-08-15T09:00:00-03:00", finished_at: "2026-08-15T09:08:42-03:00", duration_seconds: 522, status: "warning", trigger_type: "scheduled" },
     { run_id: previousRun, started_at: "2026-08-14T09:00:00-03:00", finished_at: "2026-08-14T09:09:17-03:00", duration_seconds: 557, status: "success", trigger_type: "scheduled" },
     { run_id: "manual__2026-08-13T16:22:00-03:00", started_at: "2026-08-13T16:22:00-03:00", finished_at: "2026-08-13T16:31:41-03:00", duration_seconds: 581, status: "warning", trigger_type: "manual" },
     { run_id: "scheduled__2026-08-12T09:00:00-03:00", started_at: "2026-08-12T09:00:00-03:00", finished_at: "2026-08-12T09:08:06-03:00", duration_seconds: 486, status: "success", trigger_type: "scheduled" },
