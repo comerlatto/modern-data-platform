@@ -87,6 +87,20 @@ function Metric({ eyebrow, value, note, accent }: { eyebrow: string; value: stri
   );
 }
 
+function QualityMetric({ passed, total }: { passed: unknown; total: unknown }) {
+  const passedCount = Number(passed) || 0;
+  const totalCount = Number(total) || 0;
+  const notPassedCount = Math.max(totalCount - passedCount, 0);
+  return (
+    <article className="metric metric--quality">
+      <span className="metric__index">//</span>
+      <p>Testes dbt</p>
+      <strong><span>{number(passedCount)}</span><b>/</b><span className={notPassedCount ? "metric__failed" : ""}>{number(notPassedCount)}</span></strong>
+      <small>Aprovados / não aprovados</small>
+    </article>
+  );
+}
+
 function RunDurationChart({ runs }: { runs: Record<string, unknown>[] }) {
   const history = runs.slice(0, 10).reverse();
   const maxDuration = Math.max(...history.map((run) => Number(run.duration_seconds) || 0), 1);
@@ -106,7 +120,7 @@ function RunDurationChart({ runs }: { runs: Record<string, unknown>[] }) {
           />;
         }) : <small>Sem histórico disponível</small>}
       </div>
-      <small>{history.length ? `Últimas ${history.length} execuções · duração total` : "Aguardando execuções"}</small>
+      {history.length ? <div className="run-chart__legend" aria-label="Legenda dos status"><span className="is-success">Saudável</span><span className="is-warning">Atenção</span><span className="is-failed">Falha</span></div> : <small>Aguardando execuções</small>}
     </article>
   );
 }
@@ -241,7 +255,7 @@ function Overview() {
       <Metric eyebrow="Última execução bem-sucedida" value={formatDate(data.last_successful_run)} note="Horário de Brasília" />
       <Metric eyebrow="Duração do pipeline" value={duration(data.pipeline_duration_seconds)} note="Ingestão + transformação" />
       <Metric eyebrow="Último dado comercial" value={formatDate(data.last_business_event_at)} note="Evento mais recente na origem" />
-      <Metric eyebrow="Testes dbt" value={`${number(data.tests.passed)} / ${number(data.tests.total)}`} note="Testes aprovados" accent={data.datasets_impacted > 0} />
+      <QualityMetric passed={data.tests.passed} total={data.tests.total} />
       <RunDurationChart runs={runs} />
     </div>
     <section className="section-block tracker-block">

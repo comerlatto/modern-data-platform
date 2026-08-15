@@ -60,31 +60,30 @@ Utilizar múltiplos de 4 px:
 
 | Token | Hex | Aplicação |
 | --- | --- | --- |
-| Background | `#F5F7FA` | fundo geral da página |
-| Surface | `#FFFFFF` | cards e áreas de conteúdo |
-| Navigation | `#172033` | menu lateral |
-| Border | `#E4E7EC` | bordas e divisores discretos |
-| Text Primary | `#202938` | títulos e valores principais |
-| Text Secondary | `#667085` | rótulos e informações auxiliares |
-| Text On Dark | `#F8FAFC` | texto sobre o menu lateral |
-| Text Muted On Dark | `#AAB4C5` | itens inativos do menu |
+| Background | `#F3ECDD` | fundo geral da página |
+| Surface | `#F8F3E8` | cards e áreas de conteúdo |
+| Navigation | `#123E7C` | menu lateral e estrutura principal |
+| Border | `#123E7C` | bordas e divisores estruturais |
+| Text Primary | `#17243A` | títulos e valores principais |
+| Text Secondary | `#77766F` | rótulos e informações auxiliares |
+| Text On Dark | `#F8F3E8` | texto sobre o menu lateral |
+| Text Muted On Dark | `#D9E3ED` | itens inativos do menu |
 
 ### Cores de dados e estados
 
 | Token | Hex | Significado |
 | --- | --- | --- |
-| Primary Blue | `#3563E9` | série principal e item ativo |
-| Secondary Purple | `#7655D9` | comparação ou segunda série |
-| Positive Green | `#22A06B` | crescimento ou resultado favorável |
-| Warning Amber | `#F5A524` | atenção ou desempenho intermediário |
-| Negative Red | `#D64550` | queda, desvio ou resultado desfavorável |
-| Neutral Gray | `#98A2B3` | dados auxiliares ou sem destaque |
+| Primary Blue | `#123E7C` | estrutura, títulos, série principal e item ativo |
+| Editorial Coral | `#F0644D` | falhas, alertas e destaques editoriais |
+| Operational Green | `#247565` | sucesso operacional confirmado |
+| Attention Sand | `#D59672` | atenção e ressalvas operacionais |
+| Neutral Gray | `#77766F` | etapas sem monitoramento ou estado neutro |
 
 ### Regras de uso
 
-- Reservar o azul para a informação mais importante da página.
-- Usar o roxo apenas quando houver uma segunda categoria ou comparação.
-- Usar verde, âmbar e vermelho somente quando houver significado de desempenho ou estado.
+- Manter azul, creme e coral como identidade estrutural do dashboard.
+- Reservar o verde para sucesso operacional, sem usá-lo como cor estrutural.
+- Usar areia e coral somente quando houver significado de atenção ou falha.
 - Evitar grandes superfícies em cores saturadas.
 - Não depender apenas da cor para comunicar um resultado; combinar cor com rótulo, valor, ícone ou sinal.
 - Em gráficos com muitas categorias, destacar no máximo uma ou duas e manter as demais em tons neutros.

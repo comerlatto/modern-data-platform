@@ -21,5 +21,9 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 /* Attention states use the same beige as the page background. */
 .status--warning.status--compact{background:var(--cream);color:var(--warning);box-shadow:inset 0 0 0 1px currentColor}
 .severity--warning{background:var(--cream)}
-.run-chart__bar--warning{background:#db967a;box-shadow:none}
-.run-chart__bar--warning i{background:var(--paper);color:#db967a}
+.run-chart__bar--warning{background:var(--warning);box-shadow:none}
+
+/* Functional palette: blue remains structural; green is reserved for success. */
+:root{--blue:#123e7c;--coral:#f0644d;--success:#247565;--warning:#d59672;--muted:#77766f;--cream:#f3ecdd;--paper:#f8f3e8}
+.metric--quality strong{display:flex;align-items:baseline;gap:7px}.metric--quality strong b{color:var(--muted);font:400 .65em 'IBM Plex Mono',monospace}.metric--quality .metric__failed{color:var(--coral)}
+.run-chart__legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px;color:var(--muted);font:500 8px 'IBM Plex Mono',monospace;text-transform:uppercase}.run-chart__legend span{display:inline-flex;align-items:center;gap:4px}.run-chart__legend span:before{content:"";width:6px;height:6px;border-radius:2px;background:var(--blue)}.run-chart__legend .is-warning:before{background:var(--warning)}.run-chart__legend .is-failed:before{background:var(--coral)}
