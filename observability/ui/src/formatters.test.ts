@@ -8,6 +8,8 @@ test("converte UTC para America/Sao_Paulo", () => {
 });
 
 test("formata durações sem acumular minutos", () => {
+  assert.equal(duration(0.428), "428 ms");
+  assert.equal(duration(0.0004), "< 1 ms");
   assert.equal(duration(47), "47 s");
   assert.equal(duration(107), "1 min 47 s");
   assert.equal(duration(4080), "1 h 8 min");
