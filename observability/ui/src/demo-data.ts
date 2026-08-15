@@ -10,7 +10,10 @@ export const demoDatasets: DatasetRun[] = [
 ].map(([dataset, sourceRows, rawRows, bytes], index) => ({
   dataset: String(dataset), source_row_count: Number(sourceRows), raw_row_count: Number(rawRows),
   minio_object: `adventureworks/${dataset}/load_date=2026-08-15/part-000.parquet`, file_size_bytes: Number(bytes),
-  started_at: `2026-08-15T09:0${index}:00-03:00`, duration_seconds: 18 + index * 4, status: "success", stages: { ...stages },
+  started_at: `2026-08-15T09:0${index}:00-03:00`, duration_seconds: 18 + index * 4,
+  status: dataset === "salesorderheader" ? "warning" : "success",
+  status_reason: dataset === "salesorderheader" ? "quality_warning" : undefined,
+  stages: { ...stages },
 }));
 
 const qualityResults = [

@@ -327,7 +327,11 @@ def run_detail(run_id: str) -> dict[str, Any]:
     )
     if not datasets and not pipeline:
         raise HTTPException(status_code=404, detail="Execução não encontrada")
-    failed = [row for row in datasets if row["status"] == "failed"]
+    failed = [
+        row for row in datasets
+        if row["status"] == "failed"
+        and row.get("status_reason") != "quality_failed"
+    ]
     failed_tests = [
         row for row in tests
         if normalize_status(row.get("status")) in {"failed", "warning"}
@@ -366,6 +370,7 @@ def run_datasets(run_id: str) -> list[dict[str, Any]]:
         """,
         (run_id,),
     )
+    tests = run_tests(run_id)
     for row in rows:
         ingestion_status = normalize_status(row.get("status"))
         row["stages"] = {
@@ -378,7 +383,22 @@ def run_datasets(run_id: str) -> list[dict[str, Any]]:
             stage_status for stage, stage_status in row["stages"].items()
             if stage != "powerbi"
         ]
-        row["status"] = aggregate_status(monitored_stages, bool(monitored_stages))
+        dataset_name = row["dataset"].split(".")[-1].lower()
+        quality_statuses = [
+            normalize_status(test.get("status"))
+            for test in tests
+            if dataset_name in str(test.get("depends_on") or "").lower()
+        ]
+        technical_status = aggregate_status(monitored_stages, bool(monitored_stages))
+        row["status"] = aggregate_status(
+            [technical_status, *quality_statuses],
+            bool(monitored_stages or quality_statuses),
+        )
+        row["status_reason"] = (
+            "quality_failed" if "failed" in quality_statuses else
+            "quality_warning" if "warning" in quality_statuses else
+            None
+        )
     return rows
 
 

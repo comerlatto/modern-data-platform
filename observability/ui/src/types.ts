@@ -31,6 +31,7 @@ export interface DatasetRun {
   started_at: string;
   duration_seconds: number;
   status: Status;
+  status_reason?: "quality_warning" | "quality_failed";
   stages: Record<string, Status>;
   error_message?: string;
 }
