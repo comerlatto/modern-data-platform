@@ -1,22 +1,12 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import {
-  Activity, AlertTriangle, ArrowDown, ArrowRight, Braces, Check, Clock3,
-  Database, EyeOff, Gauge, HardDrive, Menu, Minus, RefreshCw, Search,
+  AlertTriangle, ArrowDown, ArrowRight, Braces, Check, ChevronDown, Clock3,
+  Database, EyeOff, Minus, RefreshCw, Search,
   FileCheck2, ShieldCheck, X,
 } from "lucide-react";
 import { api, isDemo } from "./api";
 import { duration, formatDate, number, relativeDuration } from "./formatters";
 import type { DatasetRun, PlatformStatus, Stage, Status } from "./types";
-
-type Page = "overview" | "runs" | "freshness" | "quality" | "incidents";
-
-const labels: Record<Page, string> = {
-  overview: "Visão geral",
-  runs: "Execuções",
-  freshness: "Atualização dos dados",
-  quality: "Qualidade dos dados",
-  incidents: "Incidentes",
-};
 
 const statusLabel: Record<Status, string> = {
   success: "Saudável",
@@ -163,12 +153,42 @@ function StagePanel({ stage, onClose }: { stage: Stage; onClose: () => void }) {
   );
 }
 
-function DatasetTable({ rows, onSelect }: { rows: DatasetRun[]; onSelect: (dataset: string) => void }) {
+function DatasetTable({ rows }: { rows: DatasetRun[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, Record<string, unknown>>>({});
+  const [loading, setLoading] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<Record<string, string>>({});
+  const [evidence, setEvidence] = useState<Record<string, unknown>[] | null>(null);
   const filtered = rows.filter((row) =>
     row.dataset.toLowerCase().includes(query.toLowerCase()) &&
     (status === "all" || row.status === status));
+  const toggle = async (dataset: string) => {
+    if (expanded === dataset) {
+      setExpanded(null);
+      return;
+    }
+    setExpanded(dataset);
+    if (details[dataset]) return;
+    setLoading(dataset);
+    setDetailError((current) => ({ ...current, [dataset]: "" }));
+    try {
+      const result = await api.dataset(dataset);
+      setDetails((current) => ({ ...current, [dataset]: result }));
+    } catch {
+      setDetailError((current) => ({ ...current, [dataset]: "Não foi possível carregar os testes deste dataset." }));
+    } finally {
+      setLoading(null);
+    }
+  };
+  const openEvidence = async (test: Record<string, unknown>) => {
+    try {
+      setEvidence(await api.qualityEvidence(String(test.invocation_id), String(test.test_unique_id)));
+    } catch {
+      setEvidence([]);
+    }
+  };
   return (
     <section className="section-block">
       <header className="section-heading">
@@ -183,12 +203,20 @@ function DatasetTable({ rows, onSelect }: { rows: DatasetRun[]; onSelect: (datas
       </div>
       {!filtered.length ? <Empty>Nenhum dataset registrado nesta execução.</Empty> : (
         <div className="table-wrap"><table><thead><tr><th>Dataset</th><th>Origem</th><th>MinIO</th><th>Raw</th><th>Staging</th><th>Intermediate</th><th>Analytics</th><th>Power BI</th><th>Linhas</th><th>Status</th></tr></thead>
-          <tbody>{filtered.map((row) => <tr key={row.dataset}>
-            <td><button className="dataset-link" onClick={() => onSelect(row.dataset)}><strong>{row.dataset}</strong></button></td>
-            {(["source", "minio", "raw", "staging", "intermediate", "analytics", "powerbi"] as const).map((stage) => <td key={stage}><StatusMark status={row.stages?.[stage] || "not_started"} compact /></td>)}
-            <td>{number(row.raw_row_count)}</td><td><StatusMark status={row.status} /></td>
-          </tr>)}</tbody></table></div>
+          <tbody>{filtered.map((row) => {
+            const isExpanded = expanded === row.dataset;
+            const tests = (details[row.dataset]?.tests || []) as Record<string, unknown>[];
+            return <Fragment key={row.dataset}><tr className={isExpanded ? "dataset-row dataset-row--expanded" : "dataset-row"}>
+              <td><button className="dataset-link" onClick={() => void toggle(row.dataset)} aria-expanded={isExpanded} aria-controls={`dataset-tests-${row.dataset}`}><ChevronDown className={isExpanded ? "is-expanded" : ""} size={16} aria-hidden="true" /><strong>{row.dataset}</strong></button></td>
+              {(["source", "minio", "raw", "staging", "intermediate", "analytics", "powerbi"] as const).map((stage) => <td key={stage}><StatusMark status={row.stages?.[stage] || "not_started"} compact /></td>)}
+              <td>{number(row.raw_row_count)}</td><td><StatusMark status={row.status} /></td>
+            </tr>{isExpanded ? <tr className="dataset-tests-row"><td colSpan={10}><section id={`dataset-tests-${row.dataset}`} className="dataset-tests" aria-label={`Testes de ${row.dataset}`}>
+              <header><div><p className="kicker">Qualidade do dataset</p><h3>Testes de {row.dataset}</h3></div><span>{number(tests.length)} testes</span></header>
+              {loading === row.dataset ? <div className="dataset-tests__message">Carregando testes…</div> : detailError[row.dataset] ? <div className="inline-error">{detailError[row.dataset]}</div> : !tests.length ? <div className="dataset-tests__message">Nenhum teste associado a este dataset.</div> : <div className="nested-table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Em caso de falha</th><th>Inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{tests.map((test) => <tr key={String(test.test_unique_id || test.test_name)}><td><strong>{String(test.test_name)}</strong><small>{String(test.message || "Sem mensagem")}</small></td><td><TestTypeMark type={test.test_type} /></td><td><FailurePolicyMark severity={test.severity} /></td><td>{number(test.failed_records ?? test.failures)}</td><td>{duration(test.execution_seconds)}</td><td><StatusMark status={test.status as Status} /></td><td><button className="action-button" onClick={() => void openEvidence(test)}>Ver evidências <ArrowRight size={13} aria-hidden="true" /></button></td></tr>)}</tbody></table></div>}
+            </section></td></tr> : null}</Fragment>;
+          })}</tbody></table></div>
       )}
+      {evidence && <EvidencePanel rows={evidence} onClose={() => setEvidence(null)} />}
     </section>
   );
 }
@@ -218,7 +246,6 @@ function Overview() {
   const [data, setData] = useState<PlatformStatus | null>(null);
   const [datasets, setDatasets] = useState<DatasetRun[]>([]);
   const [runs, setRuns] = useState<Record<string, unknown>[]>([]);
-  const [selectedDataset, setSelectedDataset] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -261,8 +288,7 @@ function Overview() {
       <header className="section-heading"><div><p className="kicker">Acompanhamento / execução mais recente</p><h2>Jornada do pipeline</h2></div><div className="refresh-area"><button className="text-button" onClick={() => void load(true)} disabled={refreshing}><RefreshCw className={refreshing ? "spin" : ""} size={15} /> {refreshing ? "Atualizando…" : "Atualizar"}</button><small aria-live="polite">{feedback || (consultedAt ? `Última consulta: ${consultedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "")}</small></div></header>
       <Tracker stages={data.stages} />
     </section>
-    <DatasetTable rows={datasets} onSelect={(dataset) => api.dataset(dataset).then(setSelectedDataset)} />
-    {selectedDataset && <DatasetPanel data={selectedDataset} onClose={() => setSelectedDataset(null)} />}
+    <DatasetTable rows={datasets} />
   </>;
 }
 
@@ -370,17 +396,10 @@ function DataPage({ kicker, title, children }: { kicker: string; title: string; 
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>("overview");
-  const [menu, setMenu] = useState(false);
-  return <div className="app-shell">
-    <aside className={`sidebar ${menu ? "sidebar--open" : ""}`}>
-      <div className="brand"><span>MDP</span><strong>CONTROL<br />CENTER</strong></div>
-      <nav>{(Object.keys(labels) as Page[]).map((key, index) => <button className={page === key ? "active" : ""} key={key} onClick={() => { setPage(key); setMenu(false); }}><span>0{index + 1}</span>{labels[key]}</button>)}</nav>
-      <div className="sidebar__foot"><Activity size={17} /><span>Operational layer<br /><b>{isDemo ? "Ambiente demonstrativo" : "Ambiente local"}</b></span></div>
-    </aside>
+  return <div className="single-page-shell">
     <main>
-      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenu(!menu)} aria-label={menu ? "Fechar menu" : "Abrir menu"} aria-expanded={menu}><Menu /></button><span>AdventureWorks · Observabilidade</span>{isDemo && <span className="demo-badge">Ambiente demonstrativo</span>}</header>
-      <div className="content">{page === "overview" ? <Overview /> : page === "runs" ? <Runs /> : page === "freshness" ? <Freshness /> : page === "quality" ? <Quality /> : <Incidents />}</div>
+      <header className="topbar single-page-topbar"><span>AdventureWorks · Observabilidade</span>{isDemo && <span className="demo-badge">Ambiente demonstrativo</span>}</header>
+      <div className="content"><Overview /></div>
       <footer><span>Modern Data Platform / Observability</span><span>PostgreSQL · MinIO · dbt · Airflow</span></footer>
     </main>
   </div>;

@@ -52,5 +52,5 @@ export function demoRun(runId: string) {
     failed_tests: warning && warningTest ? [{ ...warningTest, error_message: warningTest.message }] : [],
   };
 }
-export function demoDataset(name: string) { const row = demoDatasets.find((item) => item.dataset === name) || demoDatasets[0]; return { dataset: row.dataset, ingestion: row, freshness: { freshness_type: row.dataset.startsWith("sales") ? "business" : "technical", age_seconds: 2820 }, stages: row.stages }; }
+export function demoDataset(name: string) { const row = demoDatasets.find((item) => item.dataset === name) || demoDatasets[0]; const tests = qualityResults.filter((test) => JSON.stringify(test.depends_on).toLowerCase().includes(row.dataset.toLowerCase())); return { dataset: row.dataset, ingestion: row, freshness: { freshness_type: row.dataset.startsWith("sales") ? "business" : "technical", age_seconds: 2820 }, stages: row.stages, tests }; }
 export const demoEvidence = [{ sales_order_id: 75123, status: "Archived" }, { sales_order_id: 75187, status: "Archived" }, { sales_order_id: 75201, status: "Archived" }];

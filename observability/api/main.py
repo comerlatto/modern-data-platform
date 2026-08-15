@@ -417,7 +417,8 @@ def dataset_detail(dataset: str) -> dict[str, Any]:
     )
     tests = fetch_all(
         """
-        select test_name, test_type, status, failures, message, execution_seconds
+        select invocation_id, test_unique_id, test_name, test_type, severity,
+               status, failures, message, execution_seconds
         from observability.dbt_test_results
         where depends_on::text ilike %s order by invocation_id desc
         limit 50
