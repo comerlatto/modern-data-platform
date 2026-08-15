@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  Activity, AlertTriangle, ArrowDown, Check, CircleAlert, Clock3,
+  Activity, AlertTriangle, ArrowDown, Braces, Check, CircleAlert, Clock3,
   Database, EyeOff, Gauge, HardDrive, Menu, Minus, RefreshCw, Search,
-  ShieldCheck, X,
+  FileCheck2, ShieldCheck, X,
 } from "lucide-react";
 import { api, isDemo } from "./api";
 import { duration, formatDate, number, relativeDuration } from "./formatters";
@@ -37,6 +37,14 @@ function testTypeLabel(value: unknown) {
   const type = String(value || "").toLowerCase();
   const labels: Record<string, string> = { generic: "Genérico", singular: "Singular" };
   return labels[type] || String(value || "—");
+}
+
+function TestTypeMark({ type }: { type: unknown }) {
+  const value = String(type || "").toLowerCase();
+  const singular = value === "singular";
+  const Icon = singular ? FileCheck2 : Braces;
+  const label = testTypeLabel(type);
+  return <span className={`test-type test-type--${singular ? "singular" : "generic"}`} title={`Tipo de teste: ${label}`}><Icon size={14} aria-hidden="true" />{label}</span>;
 }
 
 function SeverityMark({ severity }: { severity: unknown }) {
@@ -267,7 +275,7 @@ function Quality() {
   return <DataPage kicker="Resultados persistidos do dbt" title="Qualidade dos dados">
     {error && <p className="inline-error" role="alert">{error}</p>}
     <div className="quality-totals"><strong>{number(data?.total)}<small>testes</small></strong><span>{number(data?.passed)} aprovados</span><span>{number(data?.warnings)} avisos</span><span className="coral">{number(data?.failed)} falhas</span><small>Última execução: {formatDate(data?.last_run_at)}</small></div>
-    {!rows.length && !error ? <Empty>Ainda não existem execuções de testes dbt registradas.</Empty> : <div className="table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Severidade</th><th>Registros inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.test_unique_id)}><td><strong>{String(row.test_name)}</strong><small title={String(row.message || "")}>{String(row.message || "Sem mensagem")}</small></td><td>{testTypeLabel(row.test_type)}</td><td><SeverityMark severity={row.severity} /></td><td>{number(row.failed_records)}</td><td>{duration(row.execution_seconds)}</td><td><StatusMark status={row.status as Status} /></td><td><button className="text-button" onClick={() => void openEvidence(row)}>Ver evidências</button></td></tr>)}</tbody></table></div>}
+    {!rows.length && !error ? <Empty>Ainda não existem execuções de testes dbt registradas.</Empty> : <div className="table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Severidade</th><th>Registros inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.test_unique_id)}><td><strong>{String(row.test_name)}</strong><small title={String(row.message || "")}>{String(row.message || "Sem mensagem")}</small></td><td><TestTypeMark type={row.test_type} /></td><td><SeverityMark severity={row.severity} /></td><td>{number(row.failed_records)}</td><td>{duration(row.execution_seconds)}</td><td><StatusMark status={row.status as Status} /></td><td><button className="text-button" onClick={() => void openEvidence(row)}>Ver evidências</button></td></tr>)}</tbody></table></div>}
     {evidence && <EvidencePanel rows={evidence} onClose={() => setEvidence(null)} />}
   </DataPage>;
 }

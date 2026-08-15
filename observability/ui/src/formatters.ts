@@ -9,8 +9,13 @@ export function formatDate(value: unknown) {
 }
 
 export function duration(value: unknown) {
-  const seconds = Math.round(Number(value || 0));
-  if (!seconds) return "—";
+  const preciseSeconds = Number(value || 0);
+  if (!Number.isFinite(preciseSeconds) || preciseSeconds <= 0) return "—";
+  if (preciseSeconds < 1) {
+    const milliseconds = Math.round(preciseSeconds * 1000);
+    return milliseconds < 1 ? "< 1 ms" : `${milliseconds} ms`;
+  }
+  const seconds = Math.round(preciseSeconds);
   if (seconds < 60) return `${seconds} s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)} min${seconds % 60 ? ` ${seconds % 60} s` : ""}`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)} h${Math.floor((seconds % 3600) / 60) ? ` ${Math.floor((seconds % 3600) / 60)} min` : ""}`;
