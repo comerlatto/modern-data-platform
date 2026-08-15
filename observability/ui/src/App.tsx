@@ -55,7 +55,7 @@ function SeverityMark({ severity }: { severity: unknown }) {
   return <span className={`severity severity--${warning ? "warning" : "error"}`} title={`Severidade: ${label}`}><Icon size={14} aria-hidden="true" />{label}</span>;
 }
 
-function StatusMark({ status, compact = false }: { status: Status; compact?: boolean }) {
+function StatusMark({ status, compact = false, pill = false }: { status: Status; compact?: boolean; pill?: boolean }) {
   const value = String(status).toLowerCase();
   const normalized: Status = ["pass", "passed"].includes(value) ? "success" :
     ["error", "fail", "failed", "runtime error"].includes(value) ? "failed" :
@@ -68,7 +68,7 @@ function StatusMark({ status, compact = false }: { status: Status; compact?: boo
     normalized === "warning" ? AlertTriangle : normalized === "running" ? RefreshCw :
     normalized === "not_applicable" ? Minus : normalized === "unmonitored" ? EyeOff : Clock3;
   return (
-    <span className={`status status--${normalized} ${compact ? "status--compact" : ""}`} title={statusLabel[normalized]} aria-label={statusLabel[normalized]}>
+    <span className={`status status--${normalized} ${compact ? "status--compact" : ""} ${pill ? "status--pill" : ""}`} title={statusLabel[normalized]} aria-label={statusLabel[normalized]}>
       <Icon size={compact ? 13 : 16} /> {!compact && statusLabel[normalized]}
     </span>
   );
@@ -324,7 +324,7 @@ function Quality() {
   return <DataPage kicker="Resultados persistidos do dbt" title="Qualidade dos dados">
     {error && <p className="inline-error" role="alert">{error}</p>}
     <div className="quality-totals"><strong>{number(data?.total)}<small>testes</small></strong><span>{number(data?.passed)} aprovados</span><span>{number(data?.warnings)} avisos</span><span className="coral">{number(data?.failed)} falhas</span><small>Última execução: {formatDate(data?.last_run_at)}</small></div>
-    {!rows.length && !error ? <Empty>Ainda não existem execuções de testes dbt registradas.</Empty> : <div className="table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Severidade</th><th>Registros inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.test_unique_id)}><td><strong>{String(row.test_name)}</strong><small title={String(row.message || "")}>{String(row.message || "Sem mensagem")}</small></td><td><TestTypeMark type={row.test_type} /></td><td><SeverityMark severity={row.severity} /></td><td>{number(row.failed_records)}</td><td>{duration(row.execution_seconds)}</td><td><StatusMark status={row.status as Status} /></td><td><button className="text-button" onClick={() => void openEvidence(row)}>Ver evidências</button></td></tr>)}</tbody></table></div>}
+    {!rows.length && !error ? <Empty>Ainda não existem execuções de testes dbt registradas.</Empty> : <div className="table-wrap"><table><thead><tr><th>Teste</th><th>Tipo</th><th>Severidade</th><th>Registros inválidos</th><th>Duração</th><th>Resultado</th><th>Evidências</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.test_unique_id)}><td><strong>{String(row.test_name)}</strong><small title={String(row.message || "")}>{String(row.message || "Sem mensagem")}</small></td><td><TestTypeMark type={row.test_type} /></td><td><SeverityMark severity={row.severity} /></td><td>{number(row.failed_records)}</td><td>{duration(row.execution_seconds)}</td><td><StatusMark status={row.status as Status} pill /></td><td><button className="text-button" onClick={() => void openEvidence(row)}>Ver evidências</button></td></tr>)}</tbody></table></div>}
     {evidence && <EvidencePanel rows={evidence} onClose={() => setEvidence(null)} />}
   </DataPage>;
 }

@@ -27,3 +27,9 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 :root{--blue:#123e7c;--coral:#f0644d;--success:#247565;--warning:#d59672;--muted:#77766f;--cream:#f3ecdd;--paper:#f8f3e8}
 .metric--quality strong{display:flex;align-items:baseline;gap:7px}.metric--quality strong b{color:var(--muted);font:400 .65em 'IBM Plex Mono',monospace}.metric--quality .metric__failed{color:var(--coral)}
 .run-chart__legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px;color:var(--muted);font:500 8px 'IBM Plex Mono',monospace;text-transform:uppercase}.run-chart__legend span{display:inline-flex;align-items:center;gap:4px}.run-chart__legend span:before{content:"";width:6px;height:6px;border-radius:2px;background:var(--blue)}.run-chart__legend .is-warning:before{background:var(--warning)}.run-chart__legend .is-failed:before{background:var(--coral)}
+
+/* Quality table pills follow the functional design-system palette. */
+.status--pill{border:1px solid currentColor;border-radius:999px;padding:5px 8px}
+.status--success.status--pill{background:#e2eee9}.status--warning.status--pill{background:#f6e7df}.status--failed.status--pill{background:#fbe3de}.status--running.status--pill{background:#e4eaf2}.status--not_started.status--pill,.status--not_applicable.status--pill,.status--unmonitored.status--pill{background:#eceae4;color:var(--muted)}
+.test-type--generic,.test-type--singular{color:var(--muted);background:#eceae4}
+.severity--error{background:#fbe3de}.severity--warning{background:#f6e7df}
