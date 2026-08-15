@@ -103,7 +103,7 @@ function RunDurationChart({ runs }: { runs: Record<string, unknown>[] }) {
             key={String(run.run_id)}
             style={{ height: `${Math.max(16, (seconds / maxDuration) * 100)}%` }}
             title={`${formatDate(run.started_at)} · ${duration(seconds)} · ${statusLabel[normalized]}`}
-          ><i>{normalized === "failed" ? <X size={9} /> : normalized === "warning" ? <AlertTriangle size={9} /> : <Check size={9} />}</i></span>;
+          ><i>{normalized === "failed" ? <X size={9} /> : normalized === "warning" ? <CircleAlert size={9} /> : <Check size={9} />}</i></span>;
         }) : <small>Sem histórico disponível</small>}
       </div>
       <small>{history.length ? `Últimas ${history.length} execuções · duração total` : "Aguardando execuções"}</small>
