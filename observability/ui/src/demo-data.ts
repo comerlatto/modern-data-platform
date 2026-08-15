@@ -26,12 +26,23 @@ export const demo = {
     { run_id: latestRun, started_at: "2026-08-15T09:00:00-03:00", finished_at: "2026-08-15T09:08:42-03:00", duration_seconds: 522, status: "success", trigger_type: "scheduled" },
     { run_id: previousRun, started_at: "2026-08-14T09:00:00-03:00", finished_at: "2026-08-14T09:09:17-03:00", duration_seconds: 557, status: "success", trigger_type: "scheduled" },
     { run_id: "manual__2026-08-13T16:22:00-03:00", started_at: "2026-08-13T16:22:00-03:00", finished_at: "2026-08-13T16:31:41-03:00", duration_seconds: 581, status: "warning", trigger_type: "manual" },
+    { run_id: "scheduled__2026-08-12T09:00:00-03:00", started_at: "2026-08-12T09:00:00-03:00", finished_at: "2026-08-12T09:08:06-03:00", duration_seconds: 486, status: "success", trigger_type: "scheduled" },
+    { run_id: "scheduled__2026-08-11T09:00:00-03:00", started_at: "2026-08-11T09:00:00-03:00", finished_at: "2026-08-11T09:08:31-03:00", duration_seconds: 511, status: "success", trigger_type: "scheduled" },
+    { run_id: "scheduled__2026-08-10T09:00:00-03:00", started_at: "2026-08-10T09:00:00-03:00", finished_at: "2026-08-10T09:10:04-03:00", duration_seconds: 604, status: "success", trigger_type: "scheduled" },
+    { run_id: "scheduled__2026-08-09T09:00:00-03:00", started_at: "2026-08-09T09:00:00-03:00", finished_at: "2026-08-09T09:09:48-03:00", duration_seconds: 588, status: "success", trigger_type: "scheduled" },
+    { run_id: "scheduled__2026-08-08T09:00:00-03:00", started_at: "2026-08-08T09:00:00-03:00", finished_at: "2026-08-08T09:07:59-03:00", duration_seconds: 479, status: "success", trigger_type: "scheduled" },
+    { run_id: "scheduled__2026-08-07T09:00:00-03:00", started_at: "2026-08-07T09:00:00-03:00", finished_at: "2026-08-07T09:06:12-03:00", duration_seconds: 372, status: "failed", trigger_type: "scheduled" },
+    { run_id: "scheduled__2026-08-06T09:00:00-03:00", started_at: "2026-08-06T09:00:00-03:00", finished_at: "2026-08-06T09:08:53-03:00", duration_seconds: 533, status: "success", trigger_type: "scheduled" },
   ],
   freshness: demoDatasets.map((row, index) => ({ dataset: row.dataset, source_updated_at: `2026-08-15T08:${42 - index}:00-03:00`, minio_updated_at: "2026-08-15T09:04:12-03:00", warehouse_updated_at: "2026-08-15T09:05:36-03:00", analytics_updated_at: "2026-08-15T09:07:54-03:00", status: "success" })),
   quality: { total: 28, passed: 27, warnings: 1, failed: 0, last_run_at: "2026-08-15T09:08:31-03:00", results: qualityResults },
   incidents: [{ occurred_at: "2026-08-13T16:31:41-03:00", origin: "dbt", severity: "warning", test_name: "accepted_values_order_status", error: "Status legado detectado e mantido para análise histórica.", invalid_records: 3 }],
 };
 
-export function demoRun(runId: string) { return { ...(demo.runs.find((item) => item.run_id === runId) || demo.runs[0]), datasets: demoDatasets }; }
+export function demoRun(runId: string) {
+  const run = demo.runs.find((item) => item.run_id === runId) || demo.runs[0];
+  const failed = run.status === "failed";
+  return { ...run, datasets: demoDatasets, failure_scope: failed ? "orchestration" : null, error_message: failed ? "A tarefa de consolidação do pipeline foi encerrada pelo Airflow após exceder o tempo limite." : null, failed_tests: [] };
+}
 export function demoDataset(name: string) { const row = demoDatasets.find((item) => item.dataset === name) || demoDatasets[0]; return { dataset: row.dataset, ingestion: row, freshness: { freshness_type: row.dataset.startsWith("sales") ? "business" : "technical", age_seconds: 2820 }, stages: row.stages }; }
 export const demoEvidence = [{ sales_order_id: 75123, status: "Archived" }, { sales_order_id: 75187, status: "Archived" }, { sales_order_id: 75201, status: "Archived" }];

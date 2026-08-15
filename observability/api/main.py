@@ -320,6 +320,7 @@ def pipeline_runs(pipeline: str, limit: int = Query(20, ge=1, le=100)) -> list[d
 @app.get("/api/runs/{run_id}")
 def run_detail(run_id: str) -> dict[str, Any]:
     datasets = run_datasets(run_id)
+    tests = run_tests(run_id)
     pipeline = fetch_one(
         "select * from observability.pipeline_runs where run_id = %s",
         (run_id,),
@@ -327,16 +328,29 @@ def run_detail(run_id: str) -> dict[str, Any]:
     if not datasets and not pipeline:
         raise HTTPException(status_code=404, detail="Execução não encontrada")
     failed = [row for row in datasets if row["status"] == "failed"]
+    failed_tests = [
+        row for row in tests
+        if normalize_status(row.get("status")) in {"failed", "warning"}
+    ]
+    pipeline_status = normalize_status(pipeline.get("status") if pipeline else ("failed" if failed else "success"))
+    failure_scope = (
+        "dataset" if failed else
+        "quality" if failed_tests else
+        "orchestration" if pipeline_status == "failed" else
+        None
+    )
     return {
         "run_id": run_id,
         "started_at": pipeline.get("started_at") if pipeline else None,
         "finished_at": pipeline.get("finished_at") if pipeline else None,
         "duration_seconds": pipeline.get("duration_seconds") if pipeline else None,
         "trigger_type": trigger_type(run_id),
-        "status": normalize_status(pipeline.get("status") if pipeline else ("failed" if failed else "success")),
+        "status": pipeline_status,
         "error_message": pipeline.get("error_message") if pipeline else None,
         "datasets": datasets,
         "affected_datasets": [row["dataset"] for row in failed],
+        "failed_tests": failed_tests,
+        "failure_scope": failure_scope,
     }
 
 

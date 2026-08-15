@@ -87,6 +87,30 @@ function Metric({ eyebrow, value, note, accent }: { eyebrow: string; value: stri
   );
 }
 
+function RunDurationChart({ runs }: { runs: Record<string, unknown>[] }) {
+  const history = runs.slice(0, 10).reverse();
+  const maxDuration = Math.max(...history.map((run) => Number(run.duration_seconds) || 0), 1);
+  return (
+    <article className="metric metric--history">
+      <p>Histórico de duração</p>
+      <div className="run-chart" role="img" aria-label={`Duração total das últimas ${history.length} execuções`}>
+        {history.length ? history.map((run) => {
+          const seconds = Number(run.duration_seconds) || 0;
+          const status = String(run.status || "not_started").toLowerCase();
+          const normalized = ["failed", "error"].includes(status) ? "failed" : ["warning", "warn"].includes(status) ? "warning" : status === "running" ? "running" : "success";
+          return <span
+            className={`run-chart__bar run-chart__bar--${normalized}`}
+            key={String(run.run_id)}
+            style={{ height: `${Math.max(16, (seconds / maxDuration) * 100)}%` }}
+            title={`${formatDate(run.started_at)} · ${duration(seconds)} · ${statusLabel[normalized]}`}
+          ><i>{normalized === "failed" ? <X size={9} /> : normalized === "warning" ? <AlertTriangle size={9} /> : <Check size={9} />}</i></span>;
+        }) : <small>Sem histórico disponível</small>}
+      </div>
+      <small>{history.length ? `Últimas ${history.length} execuções · duração total` : "Aguardando execuções"}</small>
+    </article>
+  );
+}
+
 function Tracker({ stages }: { stages: Stage[] }) {
   const [selected, setSelected] = useState<Stage | null>(null);
   return (
@@ -180,6 +204,7 @@ function DatasetPanel({ data, onClose }: { data: Record<string, unknown>; onClos
 function Overview() {
   const [data, setData] = useState<PlatformStatus | null>(null);
   const [datasets, setDatasets] = useState<DatasetRun[]>([]);
+  const [runs, setRuns] = useState<Record<string, unknown>[]>([]);
   const [selectedDataset, setSelectedDataset] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -191,8 +216,9 @@ function Overview() {
     setError("");
     setFeedback("");
     try {
-      const result = await api.status();
+      const [result, runHistory] = await Promise.all([api.status(), api.runs().catch(() => [])]);
       setData(result);
+      setRuns(runHistory);
       setDatasets(result.run_id ? await api.runDatasets(result.run_id) : []);
       setConsultedAt(new Date());
       if (announce) setFeedback("Dados atualizados com sucesso.");
@@ -208,15 +234,15 @@ function Overview() {
   if (!data) return <div className="loading"><RefreshCw /> Consolidando sinais da plataforma…</div>;
   return <>
     <section className="hero">
-      <div><p className="kicker">Morning edition / operational brief</p><h1>Modern Data<br /><em>Platform</em></h1></div>
+      <div><h1>Modern Data<br /><em>Platform</em></h1></div>
       <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><strong>{statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
     </section>
     <div className="metrics">
       <Metric eyebrow="Última execução bem-sucedida" value={formatDate(data.last_successful_run)} note="Horário de Brasília" />
       <Metric eyebrow="Duração do pipeline" value={duration(data.pipeline_duration_seconds)} note="Ingestão + transformação" />
-      <Metric eyebrow="Atualização técnica" value={relativeDuration(data.technical_freshness_seconds)} note="Carga das fontes cadastrais" />
       <Metric eyebrow="Último dado comercial" value={formatDate(data.last_business_event_at)} note="Evento mais recente na origem" />
       <Metric eyebrow="Testes dbt" value={`${number(data.tests.passed)} / ${number(data.tests.total)}`} note="Testes aprovados" accent={data.datasets_impacted > 0} />
+      <RunDurationChart runs={runs} />
     </div>
     <section className="section-block tracker-block">
       <header className="section-heading"><div><p className="kicker">Acompanhamento / execução mais recente</p><h2>Jornada do pipeline</h2></div><div className="refresh-area"><button className="text-button" onClick={() => void load(true)} disabled={refreshing}><RefreshCw className={refreshing ? "spin" : ""} size={15} /> {refreshing ? "Atualizando…" : "Atualizar"}</button><small aria-live="polite">{feedback || (consultedAt ? `Última consulta: ${consultedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "")}</small></div></header>
@@ -245,12 +271,21 @@ function Runs() {
 
 function RunPanel({ data, onClose }: { data: Record<string, unknown>; onClose: () => void }) {
   const datasets = (data.datasets || []) as DatasetRun[];
+  const failedDatasets = datasets.filter((dataset) => dataset.status === "failed");
+  const failedTests = (data.failed_tests || []) as Record<string, unknown>[];
+  const failed = String(data.status).toLowerCase() === "failed";
+  const failureScope = String(data.failure_scope || "");
+  const diagnosis = data.error_message ? String(data.error_message) :
+    failureScope === "quality" ? `${failedTests.length} teste(s) dbt registraram erro ou aviso nesta execução.` :
+    failureScope === "dataset" ? `${failedDatasets.length} dataset(s) não concluíram o processamento.` :
+    failed ? "A execução foi encerrada com falha na orquestração. Todos os datasets listados concluíram saudáveis e nenhuma mensagem técnica foi registrada; consulte o log desta run no Airflow." : "";
   return <div className="scrim" onMouseDown={onClose}><aside className="panel dataset-panel" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Detalhes da execução">
     <button className="icon-button panel__close" onClick={onClose} aria-label="Fechar"><X /></button>
     <p className="kicker">Evidências da execução</p><h2>{formatDate(data.started_at)}</h2><StatusMark status={data.status as Status} />
     <dl className="definition-list"><div><dt>Início</dt><dd>{formatDate(data.started_at)}</dd></div><div><dt>Término</dt><dd>{formatDate(data.finished_at)}</dd></div><div><dt>Tipo</dt><dd>{triggerLabel(data.trigger_type)}</dd></div><div><dt>Duração total</dt><dd>{duration(data.duration_seconds)}</dd></div></dl>
-    {data.error_message ? <p className="panel__note panel__note--error">{String(data.error_message)}</p> : null}
-    <h3>Datasets</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={dataset.status} /></li>)}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
+    {diagnosis ? <section className="run-diagnosis" role="alert"><AlertTriangle size={20} /><div><strong>{failureScope === "quality" ? "Falha em testes dbt" : failureScope === "dataset" ? "Falha no processamento" : "Falha de orquestração"}</strong><p>{diagnosis}</p></div></section> : null}
+    {failedTests.length ? <><h3>Testes com ocorrência</h3><ul className="evidence-list evidence-list--issues">{failedTests.map((test) => <li key={String(test.test_name)}><span><strong>{String(test.test_name)}</strong><small>{String(test.error_message || "Sem mensagem registrada")}</small></span><StatusMark status={test.status as Status} /></li>)}</ul></> : null}
+    <h3>{failedDatasets.length ? "Datasets afetados" : "Datasets processados"}</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={dataset.status} /></li>)}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
   </aside></div>;
 }
 
