@@ -58,7 +58,7 @@ function StatusMark({ status, compact = false, pill = true, label }: { status: S
     normalized === "not_applicable" ? Minus : normalized === "unmonitored" ? EyeOff : Clock3;
   return (
     <span className={`status status--${normalized} ${compact ? "status--compact" : ""} ${pill && !compact ? "status--pill" : ""}`} title={label || statusLabel[normalized]} aria-label={label || statusLabel[normalized]}>
-      {compact && normalized === "warning" ? <b aria-hidden="true">!</b> : <Icon size={compact ? 13 : 16} />} {!compact && (label || statusLabel[normalized])}
+      {compact && normalized === "warning" ? <b aria-hidden="true">!</b> : <Icon size={compact ? 13 : 16} strokeWidth={compact ? 3 : 2} />} {!compact && (label || statusLabel[normalized])}
     </span>
   );
 }
@@ -280,7 +280,7 @@ function Overview() {
   return <>
     <section className="hero">
       <div><h1>Modern Data<br /><em>Platform</em></h1></div>
-      <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><strong>{data.platform_status === "warning" ? "PROCESSADO COM AVISO" : statusLabel[data.platform_status].toUpperCase()}</strong><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
+      <div className={`health health--${data.platform_status}`}><span>Status da plataforma</span><StatusMark status={data.platform_status} label={data.platform_status === "warning" ? "Processado com aviso" : undefined} /><small>AdventureWorks · {formatDate(data.last_successful_run)} · {triggerLabel(data.trigger_type)}</small></div>
     </section>
     <div className="metrics">
       <Metric eyebrow="Última execução bem-sucedida" value={formatDate(data.last_successful_run)} note="Horário de Brasília" />
