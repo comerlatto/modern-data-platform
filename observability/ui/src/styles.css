@@ -36,5 +36,5 @@ button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible,inp
 .action-button,.details-label{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:max-content;min-height:30px;border:1px solid var(--blue);border-radius:3px;padding:7px 10px;background:var(--paper);color:var(--blue);font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;transition:background .15s,color .15s,transform .15s}
 .action-button:hover,.run-list button:hover .details-label{background:var(--blue);color:var(--paper);transform:translateY(-1px)}
 .action-button:active,.run-list button:active .details-label{transform:translateY(0)}
-.run-list button{grid-template-columns:55px minmax(180px,1fr) 120px 130px 120px}
+.run-list button{grid-template-columns:55px minmax(180px,1fr) 120px 175px 120px}
 .run-diagnosis--warning{border-color:var(--warning);background:#f6e7df;color:var(--warning)}

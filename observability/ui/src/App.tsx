@@ -54,7 +54,7 @@ function FailurePolicyMark({ severity }: { severity: unknown }) {
   return <span className="failure-policy" title={`Em caso de falha: ${label}`}>{label}</span>;
 }
 
-function StatusMark({ status, compact = false, pill = true }: { status: Status; compact?: boolean; pill?: boolean }) {
+function StatusMark({ status, compact = false, pill = true, label }: { status: Status; compact?: boolean; pill?: boolean; label?: string }) {
   const value = String(status).toLowerCase();
   const normalized: Status = ["pass", "passed"].includes(value) ? "success" :
     ["error", "fail", "failed", "runtime error"].includes(value) ? "failed" :
@@ -67,8 +67,8 @@ function StatusMark({ status, compact = false, pill = true }: { status: Status; 
     normalized === "warning" ? AlertTriangle : normalized === "running" ? RefreshCw :
     normalized === "not_applicable" ? Minus : normalized === "unmonitored" ? EyeOff : Clock3;
   return (
-    <span className={`status status--${normalized} ${compact ? "status--compact" : ""} ${pill && !compact ? "status--pill" : ""}`} title={statusLabel[normalized]} aria-label={statusLabel[normalized]}>
-      <Icon size={compact ? 13 : 16} /> {!compact && statusLabel[normalized]}
+    <span className={`status status--${normalized} ${compact ? "status--compact" : ""} ${pill && !compact ? "status--pill" : ""}`} title={label || statusLabel[normalized]} aria-label={label || statusLabel[normalized]}>
+      <Icon size={compact ? 13 : 16} /> {!compact && (label || statusLabel[normalized])}
     </span>
   );
 }
@@ -277,7 +277,7 @@ function Runs() {
   };
   return <DataPage kicker="Histórico de orquestração" title="Execuções do pipeline">
     {error && <p className="inline-error" role="alert">{error}</p>}
-    {!rows.length && !error ? <Empty>Nenhuma execução registrada.</Empty> : <div className="run-list" role="list">{rows.map((row, i) => <button type="button" role="listitem" key={String(row.run_id)} onClick={() => void open(row.run_id)}><span>{String(i + 1).padStart(2, "0")}</span><div><strong>{formatDate(row.started_at)}</strong><small>{triggerLabel(row.trigger_type)}</small></div><b><small>Duração</small>{duration(row.duration_seconds)}</b><StatusMark status={String(row.status) as Status} /><span className="details-label">Ver detalhes <ArrowRight size={13} aria-hidden="true" /></span></button>)}</div>}
+    {!rows.length && !error ? <Empty>Nenhuma execução registrada.</Empty> : <div className="run-list" role="list">{rows.map((row, i) => <button type="button" role="listitem" key={String(row.run_id)} onClick={() => void open(row.run_id)}><span>{String(i + 1).padStart(2, "0")}</span><div><strong>{formatDate(row.started_at)}</strong><small>{triggerLabel(row.trigger_type)}</small></div><b><small>Duração</small>{duration(row.duration_seconds)}</b><StatusMark status={String(row.status) as Status} label={String(row.status).toLowerCase() === "warning" ? "Concluída com aviso" : undefined} /><span className="details-label">Ver detalhes <ArrowRight size={13} aria-hidden="true" /></span></button>)}</div>}
     {selected && <RunPanel data={selected} onClose={() => setSelected(null)} />}
   </DataPage>;
 }
@@ -298,13 +298,25 @@ function RunPanel({ data, onClose }: { data: Record<string, unknown>; onClose: (
     failureScope === "quality" ? qualityDiagnosis :
     failureScope === "dataset" ? `${failedDatasets.length} dataset(s) não concluíram o processamento.` :
     failed ? "A execução foi encerrada com falha na orquestração. Todos os datasets listados concluíram saudáveis e nenhuma mensagem técnica foi registrada; consulte o log desta run no Airflow." : "";
+  const datasetPresentation = (dataset: DatasetRun): { status: Status; label?: string } => {
+    const datasetName = dataset.dataset.split(".").at(-1)?.toLowerCase() || dataset.dataset.toLowerCase();
+    const relatedTests = failedTests.filter((test) => {
+      const dependency = JSON.stringify(test.depends_on || test.dataset || "").toLowerCase();
+      return dependency.includes(datasetName);
+    });
+    const relatedStatuses = relatedTests.map((test) => String(test.status || "").toLowerCase());
+    if (relatedStatuses.some((status) => ["error", "fail", "failed", "runtime error"].includes(status))) return { status: "failed", label: "Falha de qualidade" };
+    if (relatedStatuses.some((status) => ["warn", "warning"].includes(status))) return { status: "warning", label: "Processado com aviso" };
+    if (["failed", "blocked", "not_started"].includes(dataset.status)) return { status: "not_started", label: "Não processada" };
+    return { status: dataset.status };
+  };
   return <div className="scrim" onMouseDown={onClose}><aside className="panel dataset-panel" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Detalhes da execução">
     <button className="icon-button panel__close" onClick={onClose} aria-label="Fechar"><X /></button>
-    <p className="kicker">Evidências da execução</p><h2>{formatDate(data.started_at)}</h2><StatusMark status={data.status as Status} />
+    <p className="kicker">Evidências da execução</p><h2>{formatDate(data.started_at)}</h2><StatusMark status={data.status as Status} label={warning ? "Concluída com aviso" : undefined} />
     <dl className="definition-list"><div><dt>Início</dt><dd>{formatDate(data.started_at)}</dd></div><div><dt>Término</dt><dd>{formatDate(data.finished_at)}</dd></div><div><dt>Tipo</dt><dd>{triggerLabel(data.trigger_type)}</dd></div><div><dt>Duração total</dt><dd>{duration(data.duration_seconds)}</dd></div></dl>
     {diagnosis ? <section className={`run-diagnosis ${warning ? "run-diagnosis--warning" : ""}`} role="alert"><AlertTriangle size={20} /><div><strong>{failureScope === "quality" ? warning ? "Atenção em testes dbt" : "Falha em testes dbt" : failureScope === "dataset" ? "Falha no processamento" : "Falha de orquestração"}</strong><p>{diagnosis}</p></div></section> : null}
     {failedTests.length ? <><h3>Testes com ocorrência</h3><ul className="evidence-list evidence-list--issues">{failedTests.map((test) => <li key={String(test.test_name)}><span><strong>{String(test.test_name)}</strong><small>{String(test.error_message || "Sem mensagem registrada")}</small></span><StatusMark status={test.status as Status} /></li>)}</ul></> : null}
-    <h3>{failedDatasets.length ? "Datasets afetados" : "Datasets processados"}</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={dataset.status} /></li>)}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
+    <h3>{failedDatasets.length ? "Datasets afetados" : "Datasets processados"}</h3>{datasets.length ? <ul className="evidence-list">{datasets.map((dataset) => { const presentation = datasetPresentation(dataset); return <li key={dataset.dataset}><span>{dataset.dataset}</span><StatusMark status={presentation.status} label={presentation.label} /></li>; })}</ul> : <Empty>Nenhuma evidência de dataset registrada.</Empty>}
   </aside></div>;
 }
 

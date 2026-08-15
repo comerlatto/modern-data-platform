@@ -16,7 +16,7 @@ export const demoDatasets: DatasetRun[] = [
 const qualityResults = [
   ["not_null_fct_sales_order_key", "not_null", "error", 0, "pass"], ["unique_fct_sales_order_key", "unique", "error", 0, "pass"],
   ["relationships_sales_customer", "relationships", "error", 0, "pass"], ["accepted_values_order_status", "accepted_values", "warn", 3, "warn"],
-].map(([name, type, severity, failed, status], index) => ({ invocation_id: "demo-dbt-20260815", test_unique_id: `test.demo.${index + 1}`, test_name: name, test_type: type, severity, failed_records: failed, execution_seconds: 0.42 + index * 0.17, status, message: failed ? "3 pedidos históricos usam um status legado já mapeado." : "Teste concluído sem registros inválidos." }));
+].map(([name, type, severity, failed, status], index) => ({ invocation_id: "demo-dbt-20260815", test_unique_id: `test.demo.${index + 1}`, test_name: name, test_type: type, severity, failed_records: failed, execution_seconds: 0.42 + index * 0.17, status, depends_on: name === "accepted_values_order_status" ? ["source.adventure_works.sales.salesorderheader"] : [], message: failed ? "3 pedidos históricos usam um status legado já mapeado." : "Teste concluído sem registros inválidos." }));
 
 export const demo = {
   status: { platform_status: "success", run_id: latestRun, trigger_type: "scheduled", last_successful_run: "2026-08-15T09:08:42-03:00", pipeline_duration_seconds: 522, technical_freshness_seconds: 2_820, last_business_event_at: "2026-08-14T17:48:19-03:00", tests: { passed: 27, total: 28 }, failed_pipelines: 0, datasets_impacted: 0,
