@@ -18,19 +18,28 @@ from python.ingestion.load_raw import (
 
 
 class LoadRawMinioTests(unittest.TestCase):
-    def test_build_object_name_partitions_parquet_by_table_and_date(self):
+    def test_build_object_name_partitions_parquet_by_table_date_and_run(self):
         loaded_at = datetime(2026, 8, 13, 22, 30, tzinfo=timezone.utc)
 
         object_name = build_object_name(
             loaded_at,
             "salesorderheader",
+            "manual:run/01",
         )
 
         self.assertEqual(
             object_name,
             "raw/sales_order_header/load_date=2026-08-13/"
-            "sales_order_header.parquet",
+            "run_id=manual%3Arun%2F01/sales_order_header.parquet",
         )
+
+    def test_different_runs_never_share_the_same_object_name(self):
+        loaded_at = datetime(2026, 8, 13, 22, 30, tzinfo=timezone.utc)
+
+        first = build_object_name(loaded_at, "customer", "scheduled__01")
+        second = build_object_name(loaded_at, "customer", "scheduled__02")
+
+        self.assertNotEqual(first, second)
 
     @patch.dict(os.environ, {"INGESTION_RUN_ID": "manual:run/01"})
     def test_get_ingestion_run_id_preserves_orchestrator_identifier(self):

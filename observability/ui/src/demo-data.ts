@@ -9,7 +9,7 @@ export const demoDatasets: DatasetRun[] = [
   ["customer", 19_820, 19_820, 2_145_732], ["product", 504, 504, 86_441], ["address", 19_614, 19_614, 1_765_309],
 ].map(([dataset, sourceRows, rawRows, bytes], index) => ({
   dataset: String(dataset), source_row_count: Number(sourceRows), raw_row_count: Number(rawRows),
-  minio_object: `adventureworks/${dataset}/load_date=2026-08-15/part-000.parquet`, file_size_bytes: Number(bytes),
+  minio_object: `raw/${dataset}/load_date=2026-08-15/run_id=${encodeURIComponent(latestRun)}/${dataset}.parquet`, file_size_bytes: Number(bytes),
   started_at: `2026-08-15T09:0${index}:00-03:00`, duration_seconds: 18 + index * 4,
   status: dataset === "salesorderheader" ? "warning" : "success",
   status_reason: dataset === "salesorderheader" ? "quality_warning" : undefined,

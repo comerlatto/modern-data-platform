@@ -336,19 +336,24 @@ data da carga:
 raw/
 ├── customer/
 │   └── load_date=2026-08-13/
-│       └── customer.parquet
+│       └── run_id=scheduled__2026-08-13T09%3A00%3A00-03%3A00/
+│           └── customer.parquet
 ├── sales_order_header/
 │   └── load_date=2026-08-13/
-│       └── sales_order_header.parquet
+│       └── run_id=scheduled__2026-08-13T09%3A00%3A00-03%3A00/
+│           └── sales_order_header.parquet
 └── sales_order_detail/
     └── load_date=2026-08-13/
-        └── sales_order_detail.parquet
+        └── run_id=scheduled__2026-08-13T09%3A00%3A00-03%3A00/
+            └── sales_order_detail.parquet
 ```
 
-O padrão `load_date=AAAA-MM-DD` permite leitura por partição. Quando uma tabela
-é carregada mais de uma vez no mesmo dia, o versionamento do bucket preserva
-as versões anteriores do mesmo objeto. A ingestão só recria uma tabela no
-PostgreSQL depois que o respectivo snapshot foi armazenado com sucesso.
+O padrão `load_date=AAAA-MM-DD/run_id=<execução>` permite leitura por partição e
+dá a cada execução uma chave própria, inclusive quando uma tabela é carregada
+mais de uma vez no mesmo dia. O `run_id` é codificado para ser seguro no caminho
+do objeto. O versionamento do bucket permanece como uma proteção adicional. A
+ingestão só recria uma tabela no PostgreSQL depois que o respectivo snapshot foi
+armazenado com sucesso, e a chave exata fica registrada na observabilidade.
 
 ### Data Platform Control Center
 

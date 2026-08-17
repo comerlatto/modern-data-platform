@@ -3,6 +3,7 @@ import tempfile
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
+from urllib.parse import quote
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -96,12 +97,14 @@ def get_ingestion_run_id() -> str:
 def build_object_name(
     loaded_at: datetime,
     table_name: str,
+    run_id: str,
 ) -> str:
     object_table_name = OBJECT_TABLE_NAMES.get(table_name, table_name)
     load_date = loaded_at.date().isoformat()
+    encoded_run_id = quote(run_id, safe="")
     return (
         f"raw/{object_table_name}/load_date={load_date}/"
-        f"{object_table_name}.parquet"
+        f"run_id={encoded_run_id}/{object_table_name}.parquet"
     )
 
 
@@ -448,6 +451,7 @@ def load_table(
     object_name = build_object_name(
         loaded_at,
         table_name,
+        run_id,
     )
 
     with tempfile.SpooledTemporaryFile(

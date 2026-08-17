@@ -243,7 +243,7 @@ function DatasetPanel({ data, onClose }: { data: Record<string, unknown>; onClos
     <button className="icon-button panel__close" onClick={onClose}><X /></button>
     <p className="kicker">Jornada do dataset / evidência mais recente</p><h2>{String(data.dataset)}</h2>
     <div className="dataset-journey">{journey.map(([label, status, note], index) => <div key={label}><article><StatusMark status={status} compact /><span><strong>{label}</strong><small>{note}</small></span></article>{index < journey.length - 1 && <ArrowDown />}</div>)}</div>
-    <dl className="definition-list"><div><dt>{freshness.freshness_type === "business" ? "Idade do último evento" : "Atualização técnica"}</dt><dd>{relativeDuration(freshness.age_seconds)}</dd></div><div><dt>Última carga</dt><dd>{formatDate(ingestion.finished_at)}</dd></div><div><dt>Localização do arquivo</dt><dd className="path-value">{String(ingestion.minio_object || "—")}</dd></div><div><dt>Tamanho do Parquet</dt><dd>{ingestion.file_size_bytes ? `${(Number(ingestion.file_size_bytes) / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div></dl>
+    <dl className="definition-list"><div><dt>{freshness.freshness_type === "business" ? "Idade do último evento" : "Atualização técnica"}</dt><dd>{relativeDuration(freshness.age_seconds)}</dd></div><div><dt>Última carga</dt><dd>{formatDate(ingestion.finished_at)}</dd></div><div><dt>Snapshot usado nesta execução</dt><dd className="path-value">{String(ingestion.minio_object || "—")}</dd></div><div><dt>Tamanho do Parquet</dt><dd>{ingestion.file_size_bytes ? `${(Number(ingestion.file_size_bytes) / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div></dl>
   </aside></div>;
 }
 
