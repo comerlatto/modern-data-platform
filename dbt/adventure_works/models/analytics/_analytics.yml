@@ -733,6 +733,87 @@ models:
           - not_null
 
 
+  - name: fct_sales_monthly
+    description: >
+      Esta tabela representa a série temporal mensal consolidada de vendas da
+      AdventureWorks e foi projetada como dataset de entrada para análises
+      temporais, forecasting e acompanhamento de performance comercial. Grão:
+      uma linha por mês, desde o primeiro até o último mês presente em
+      fact_sales. A origem principal é fact_sales e dim_date fornece a sequência
+      temporal contínua; meses sem vendas recebem métricas iguais a zero.
+
+    config:
+      materialized: table
+      contract:
+        enforced: true
+
+    columns:
+      - name: sales_month
+        description: Primeiro dia do mês de realização das vendas.
+        data_type: date
+        constraints:
+          - type: not_null
+          - type: primary_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: orders_count
+        description: Quantidade distinta de pedidos realizados no mês.
+        data_type: bigint
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: customers_count
+        description: Quantidade distinta de clientes que realizaram pedidos no mês.
+        data_type: bigint
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: units_sold
+        description: Soma das unidades vendidas no mês.
+        data_type: bigint
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: gross_sales
+        description: Soma do valor bruto dos itens antes dos descontos.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: discount_amount
+        description: Soma do valor monetário dos descontos aplicados aos itens.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: net_sales
+        description: Soma da receita líquida dos itens após os descontos.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: average_order_value
+        description: Receita líquida mensal dividida pela quantidade de pedidos; zero em mês sem vendas.
+        data_type: numeric(19, 4)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
   - name: dim_special_offer
     description: >
       Dimensão de ofertas especiais utilizadas nos itens de venda.
