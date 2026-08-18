@@ -33,3 +33,8 @@ airflow/logs/*
 !airflow/logs/.gitkeep
 
 .vercel
+
+# Python virtual environments
+.venv/
+.venv_forecast/
+venv/
