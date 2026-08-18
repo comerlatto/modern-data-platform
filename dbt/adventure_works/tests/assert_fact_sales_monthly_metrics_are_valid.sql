@@ -1,5 +1,5 @@
 select *
-from {{ ref('fct_sales_monthly') }}
+from {{ ref('fact_sales_monthly') }}
 where
     orders_count < 0
     or customers_count < 0

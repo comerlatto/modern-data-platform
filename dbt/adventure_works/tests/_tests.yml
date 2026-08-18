@@ -76,13 +76,13 @@ data_tests:
       individual das medidas. O teste falha quando encontra uma divergência
       superior a essa tolerância.
 
-  - name: assert_fct_sales_monthly_metrics_are_valid
+  - name: assert_fact_sales_monthly_metrics_are_valid
     description: >
       Garante que contagens, quantidades e valores monetários da série mensal
       consolidada não sejam negativos.
 
-  - name: assert_fct_sales_monthly_reconciles
+  - name: assert_fact_sales_monthly_reconciles
     description: >
-      Reconcilia fct_sales_monthly com fact_sales. A receita líquida aceita
+      Reconcilia fact_sales_monthly com fact_sales. A receita líquida aceita
       tolerância monetária de 0,01; pedidos distintos e unidades vendidas devem
       coincidir exatamente.

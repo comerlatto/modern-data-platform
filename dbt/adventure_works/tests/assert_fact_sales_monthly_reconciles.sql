@@ -4,7 +4,7 @@ with monthly_totals as (
         sum(net_sales) as net_sales,
         sum(orders_count) as orders_count,
         sum(units_sold) as units_sold
-    from {{ ref('fct_sales_monthly') }}
+    from {{ ref('fact_sales_monthly') }}
 
 ),
 

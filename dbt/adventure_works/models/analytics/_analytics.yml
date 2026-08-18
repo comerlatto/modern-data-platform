@@ -733,14 +733,15 @@ models:
           - not_null
 
 
-  - name: fct_sales_monthly
+  - name: fact_sales_monthly
     description: >
-      Esta tabela representa a série temporal mensal consolidada de vendas da
-      AdventureWorks e foi projetada como dataset de entrada para análises
-      temporais, forecasting e acompanhamento de performance comercial. Grão:
-      uma linha por mês, desde o primeiro até o último mês presente em
-      fact_sales. A origem principal é fact_sales e dim_date fornece a sequência
-      temporal contínua; meses sem vendas recebem métricas iguais a zero.
+      Série temporal mensal consolidada de vendas da AdventureWorks, preparada
+      para análises temporais, forecasting e acompanhamento de performance
+      comercial. Grão: uma linha por mês, desde o primeiro até o último mês
+      presente em fact_sales. A fact_sales fornece as métricas e a dim_date
+      garante a sequência temporal contínua. Meses sem vendas recebem métricas
+      iguais a zero. A coluna is_complete_month identifica se o período mensal
+      está integralmente coberto pelas datas disponíveis na fato.
 
     config:
       materialized: table
@@ -749,7 +750,7 @@ models:
 
     columns:
       - name: sales_month
-        description: Primeiro dia do mês de realização das vendas.
+        description: Primeiro dia do mês de referência das vendas.
         data_type: date
         constraints:
           - type: not_null
@@ -757,6 +758,34 @@ models:
         data_tests:
           - not_null
           - unique
+
+      - name: month_end_date
+        description: Último dia calendário do mês de referência.
+        data_type: date
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: first_order_date
+        description: >
+          Primeira data com pedido registrado no mês. Pode ser nula quando o
+          mês não possui vendas.
+        data_type: date
+
+      - name: last_order_date
+        description: >
+          Última data com pedido registrado no mês. Pode ser nula quando o mês
+          não possui vendas.
+        data_type: date
+
+      - name: sales_days
+        description: Quantidade de datas distintas com vendas registradas no mês.
+        data_type: integer
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
 
       - name: orders_count
         description: Quantidade distinta de pedidos realizados no mês.
@@ -767,7 +796,7 @@ models:
           - not_null
 
       - name: customers_count
-        description: Quantidade distinta de clientes que realizaram pedidos no mês.
+        description: Quantidade distinta de clientes com pedidos no mês.
         data_type: bigint
         constraints:
           - type: not_null
@@ -807,101 +836,36 @@ models:
           - not_null
 
       - name: average_order_value
-        description: Receita líquida mensal dividida pela quantidade de pedidos; zero em mês sem vendas.
+        description: >
+          Receita líquida mensal dividida pela quantidade de pedidos. Recebe
+          zero quando o mês não possui pedidos.
         data_type: numeric(19, 4)
         constraints:
           - type: not_null
         data_tests:
           - not_null
 
-  - name: dim_special_offer
-    description: >
-      Dimensão de ofertas especiais utilizadas nos itens de venda.
-      Grão: uma linha por oferta, identificada por special_offer_id.
-
-    config:
-      materialized: table
-      contract:
-        enforced: true
-
-    columns:
-      - name: special_offer_id
-        description: Identificador único da oferta especial.
-        data_type: integer
-        constraints:
-          - type: not_null
-          - type: primary_key
-        data_tests:
-          - not_null
-          - unique
-
-      - name: special_offer_description
-        description: Descrição da oferta especial.
-        data_type: varchar(255)
+      - name: first_available_date
+        description: Primeira data de pedido disponível na fact_sales.
+        data_type: date
         constraints:
           - type: not_null
         data_tests:
           - not_null
 
-      - name: discount_percentage
+      - name: last_available_date
+        description: Última data de pedido disponível na fact_sales.
+        data_type: date
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: is_complete_month
         description: >
-          Percentual de desconto concedido pela oferta, armazenado como
-          proporção entre 0 e 1.
-        data_type: numeric(19, 4)
-        constraints:
-          - type: not_null
-        data_tests:
-          - not_null
-
-      - name: offer_type
-        description: Tipo da oferta especial.
-        data_type: varchar(50)
-        constraints:
-          - type: not_null
-        data_tests:
-          - not_null
-
-      - name: offer_category
-        description: Categoria à qual a oferta especial pertence.
-        data_type: varchar(50)
-        constraints:
-          - type: not_null
-        data_tests:
-          - not_null
-
-      - name: start_date
-        description: Data e hora de início da validade da oferta.
-        data_type: timestamp
-        constraints:
-          - type: not_null
-        data_tests:
-          - not_null
-
-      - name: end_date
-        description: Data e hora de término da validade da oferta.
-        data_type: timestamp
-        constraints:
-          - type: not_null
-        data_tests:
-          - not_null
-
-      - name: minimum_quantity
-        description: Quantidade mínima necessária para aplicação da oferta.
-        data_type: integer
-        constraints:
-          - type: not_null
-        data_tests:
-          - not_null
-
-      - name: maximum_quantity
-        description: >
-          Quantidade máxima permitida para aplicação da oferta. Pode ser nula
-          quando a oferta não possui limite máximo.
-        data_type: integer
-
-      - name: modified_at
-        description: Data e hora da última alteração da oferta na origem.
-        data_type: timestamp
+          Indica se os dados disponíveis cobrem o mês desde o primeiro até o
+          último dia calendário.
+        data_type: boolean
         constraints:
           - type: not_null
         data_tests:
