@@ -248,23 +248,32 @@ function DatasetPanel({ data, onClose }: { data: Record<string, unknown>; onClos
 }
 
 function FinalTables({ rows, error }: { rows: FinalTableProfile[]; error: string }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const tableStatus = (row: FinalTableProfile): Status => {
+    if (row.duplicate_rows > 0 || row.null_columns > 0 || row.unexpected_values > 0) return "failed";
+    if (row.missing_values_pct > 0 || row.volume_anomaly === "warning" || (row.complete_months && row.complete_months.actual < row.complete_months.expected)) return "warning";
+    return "success";
+  };
   return <section className="section-block final-tables">
     <header className="section-heading"><div><p className="kicker">Camada de consumo</p><h2>Tabelas finais</h2></div><span>{number(rows.length)} tabelas</span></header>
-    {error ? <div className="inline-error" role="alert">{error}</div> : !rows.length ? <Empty>Nenhuma tabela foi encontrada no schema analytics.</Empty> : <div className="final-table-grid">
-      {rows.map((row) => <article className="final-table-card" key={row.table}>
-        <header><Database size={18} aria-hidden="true" /><h3>{row.table}</h3></header>
-        <dl>
-          <div><dt>Linhas</dt><dd>{number(row.rows)}</dd></div>
-          <div><dt>Colunas</dt><dd>{number(row.columns)}</dd></div>
-          <div><dt>Valores ausentes</dt><dd>{row.missing_values_pct.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</dd></div>
-          <div><dt>Linhas duplicadas</dt><dd>{number(row.duplicate_rows)}</dd></div>
-          <div><dt>Meses completos</dt><dd>{row.complete_months ? `${number(row.complete_months.actual)}/${number(row.complete_months.expected)}` : "Não aplicável"}</dd></div>
-          <div><dt>Colunas com nulos</dt><dd>{number(row.null_columns)}</dd></div>
-          <div><dt>Valores inesperados</dt><dd>{number(row.unexpected_values)}</dd></div>
-          <div><dt>Anomalia de volume</dt><dd><StatusMark status={row.volume_anomaly} label={row.volume_anomaly === "warning" ? "Atenção" : "Normal"} /></dd></div>
-        </dl>
-      </article>)}
-    </div>}
+    {error ? <div className="inline-error" role="alert">{error}</div> : !rows.length ? <Empty>Nenhuma tabela foi encontrada no schema analytics.</Empty> : <div className="table-wrap final-table-list"><table><thead><tr><th>Tabela</th><th>Linhas</th><th>Colunas</th><th>Completude</th><th>Status</th><th>Detalhes</th></tr></thead><tbody>
+      {rows.map((row) => {
+        const isExpanded = expanded === row.table;
+        const status = tableStatus(row);
+        return <Fragment key={row.table}><tr className={isExpanded ? "final-table-row final-table-row--expanded" : "final-table-row"}>
+          <td><strong>{row.table}</strong></td><td>{number(row.rows)}</td><td>{number(row.columns)}</td><td>{(100 - row.missing_values_pct).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</td><td><StatusMark status={status} /></td>
+          <td><button className="action-button" onClick={() => setExpanded(isExpanded ? null : row.table)} aria-expanded={isExpanded} aria-controls={`final-table-${row.table}`}>{isExpanded ? "Ocultar" : "Ver detalhes"} <ChevronRight className={isExpanded ? "is-expanded" : ""} size={14} aria-hidden="true" /></button></td>
+        </tr>{isExpanded ? <tr className="final-table-details-row"><td colSpan={6}><article id={`final-table-${row.table}`} className="final-table-card">
+          <header><Database size={18} aria-hidden="true" /><div><p className="kicker">Perfil da tabela</p><h3>{row.table}</h3></div><StatusMark status={status} /></header>
+          <dl>
+            <div><dt>Linhas</dt><dd>{number(row.rows)}</dd></div><div><dt>Colunas</dt><dd>{number(row.columns)}</dd></div>
+            <div><dt>Valores ausentes</dt><dd>{row.missing_values_pct.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</dd></div><div><dt>Linhas duplicadas</dt><dd>{number(row.duplicate_rows)}</dd></div>
+            <div><dt>Meses completos</dt><dd>{row.complete_months ? `${number(row.complete_months.actual)}/${number(row.complete_months.expected)}` : "Não aplicável"}</dd></div><div><dt>Colunas com nulos</dt><dd>{number(row.null_columns)}</dd></div>
+            <div><dt>Valores inesperados</dt><dd>{number(row.unexpected_values)}</dd></div><div><dt>Anomalia de volume</dt><dd><StatusMark status={row.volume_anomaly} label={row.volume_anomaly === "warning" ? "Atenção" : "Normal"} /></dd></div>
+          </dl>
+        </article></td></tr> : null}</Fragment>;
+      })}
+    </tbody></table></div>}
   </section>;
 }
 
