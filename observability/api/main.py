@@ -102,7 +102,7 @@ def final_table_profile(conn: psycopg.Connection[Any], table_name: str, columns:
         """
         select coalesce(sum(t.failures), 0)::bigint as count
         from observability.dbt_test_results t
-        where lower(t.test_name) like '%accepted_value%'
+        where lower(t.test_name) like '%%accepted_value%%'
           and t.depends_on::text ilike %s
           and t.invocation_id = (select invocation_id from observability.dbt_runs order by collected_at desc limit 1)
         """,
@@ -568,6 +568,18 @@ def final_tables() -> list[dict[str, Any]]:
             select table_name, column_name, data_type, ordinal_position
             from information_schema.columns
             where table_schema = 'analytics'
+              and table_name in (
+                select node_name
+                from observability.dbt_manifest_nodes
+                where resource_type = 'model'
+                  and layer = 'analytics'
+                  and orchestrator_run_id = (
+                    select orchestrator_run_id
+                    from observability.dbt_runs
+                    where orchestrator_run_id is not null
+                    order by collected_at desc limit 1
+                  )
+              )
             order by table_name, ordinal_position
             """
         ).fetchall())

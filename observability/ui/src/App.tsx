@@ -247,10 +247,10 @@ function DatasetPanel({ data, onClose }: { data: Record<string, unknown>; onClos
   </aside></div>;
 }
 
-function FinalTables({ rows }: { rows: FinalTableProfile[] }) {
+function FinalTables({ rows, error }: { rows: FinalTableProfile[]; error: string }) {
   return <section className="section-block final-tables">
     <header className="section-heading"><div><p className="kicker">Camada de consumo</p><h2>Tabelas finais</h2></div><span>{number(rows.length)} tabelas</span></header>
-    {!rows.length ? <Empty>Nenhuma tabela foi encontrada no schema analytics.</Empty> : <div className="final-table-grid">
+    {error ? <div className="inline-error" role="alert">{error}</div> : !rows.length ? <Empty>Nenhuma tabela foi encontrada no schema analytics.</Empty> : <div className="final-table-grid">
       {rows.map((row) => <article className="final-table-card" key={row.table}>
         <header><Database size={18} aria-hidden="true" /><h3>{row.table}</h3></header>
         <dl>
@@ -272,6 +272,7 @@ function Overview() {
   const [data, setData] = useState<PlatformStatus | null>(null);
   const [datasets, setDatasets] = useState<DatasetRun[]>([]);
   const [finalTables, setFinalTables] = useState<FinalTableProfile[]>([]);
+  const [finalTablesError, setFinalTablesError] = useState("");
   const [runs, setRuns] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -281,12 +282,18 @@ function Overview() {
     if (refreshing) return;
     setRefreshing(true);
     setError("");
+    setFinalTablesError("");
     setFeedback("");
     try {
-      const [result, runHistory, tableProfiles] = await Promise.all([api.status(), api.runs().catch(() => []), api.finalTables().catch(() => [])]);
+      const [result, runHistory, tableProfiles] = await Promise.all([
+        api.status(),
+        api.runs().catch(() => []),
+        api.finalTables().then((rows) => ({ rows, error: "" })).catch(() => ({ rows: [], error: "Não foi possível consultar as tabelas finais. Verifique a API de observabilidade." })),
+      ]);
       setData(result);
       setRuns(runHistory);
-      setFinalTables(tableProfiles);
+      setFinalTables(tableProfiles.rows);
+      setFinalTablesError(tableProfiles.error);
       setDatasets(result.run_id ? await api.runDatasets(result.run_id) : []);
       setConsultedAt(new Date());
       if (announce) setFeedback("Dados atualizados com sucesso.");
@@ -317,7 +324,7 @@ function Overview() {
       <Tracker stages={data.stages} />
     </section>
     <DatasetTable rows={datasets} />
-    <FinalTables rows={finalTables} />
+    <FinalTables rows={finalTables} error={finalTablesError} />
   </>;
 }
 
