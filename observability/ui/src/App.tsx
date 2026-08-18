@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { api, isDemo } from "./api";
 import { duration, formatDate, formatTime, number, relativeDuration } from "./formatters";
-import type { DatasetRun, PlatformStatus, Stage, Status } from "./types";
+import type { DatasetRun, FinalTableProfile, PlatformStatus, Stage, Status } from "./types";
 
 const statusLabel: Record<Status, string> = {
   success: "Saudável",
@@ -247,9 +247,31 @@ function DatasetPanel({ data, onClose }: { data: Record<string, unknown>; onClos
   </aside></div>;
 }
 
+function FinalTables({ rows }: { rows: FinalTableProfile[] }) {
+  return <section className="section-block final-tables">
+    <header className="section-heading"><div><p className="kicker">Camada de consumo</p><h2>Tabelas finais</h2></div><span>{number(rows.length)} tabelas</span></header>
+    {!rows.length ? <Empty>Nenhuma tabela foi encontrada no schema analytics.</Empty> : <div className="final-table-grid">
+      {rows.map((row) => <article className="final-table-card" key={row.table}>
+        <header><Database size={18} aria-hidden="true" /><h3>{row.table}</h3></header>
+        <dl>
+          <div><dt>Linhas</dt><dd>{number(row.rows)}</dd></div>
+          <div><dt>Colunas</dt><dd>{number(row.columns)}</dd></div>
+          <div><dt>Valores ausentes</dt><dd>{row.missing_values_pct.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</dd></div>
+          <div><dt>Linhas duplicadas</dt><dd>{number(row.duplicate_rows)}</dd></div>
+          <div><dt>Meses completos</dt><dd>{row.complete_months ? `${number(row.complete_months.actual)}/${number(row.complete_months.expected)}` : "Não aplicável"}</dd></div>
+          <div><dt>Colunas com nulos</dt><dd>{number(row.null_columns)}</dd></div>
+          <div><dt>Valores inesperados</dt><dd>{number(row.unexpected_values)}</dd></div>
+          <div><dt>Anomalia de volume</dt><dd><StatusMark status={row.volume_anomaly} label={row.volume_anomaly === "warning" ? "Atenção" : "Normal"} /></dd></div>
+        </dl>
+      </article>)}
+    </div>}
+  </section>;
+}
+
 function Overview() {
   const [data, setData] = useState<PlatformStatus | null>(null);
   const [datasets, setDatasets] = useState<DatasetRun[]>([]);
+  const [finalTables, setFinalTables] = useState<FinalTableProfile[]>([]);
   const [runs, setRuns] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -261,9 +283,10 @@ function Overview() {
     setError("");
     setFeedback("");
     try {
-      const [result, runHistory] = await Promise.all([api.status(), api.runs().catch(() => [])]);
+      const [result, runHistory, tableProfiles] = await Promise.all([api.status(), api.runs().catch(() => []), api.finalTables().catch(() => [])]);
       setData(result);
       setRuns(runHistory);
+      setFinalTables(tableProfiles);
       setDatasets(result.run_id ? await api.runDatasets(result.run_id) : []);
       setConsultedAt(new Date());
       if (announce) setFeedback("Dados atualizados com sucesso.");
@@ -294,6 +317,7 @@ function Overview() {
       <Tracker stages={data.stages} />
     </section>
     <DatasetTable rows={datasets} />
+    <FinalTables rows={finalTables} />
   </>;
 }
 
