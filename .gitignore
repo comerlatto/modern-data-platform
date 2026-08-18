@@ -1,10 +1,12 @@
 .env
 .venv/
+.venv_forecast/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .coverage
 htmlcov/
+.ipynb_checkpoints/
 
 logs/
 target/
