@@ -1,5 +1,5 @@
-import type { DatasetRun, PlatformStatus } from "./types";
-import { demo, demoDataset, demoDatasets, demoEvidence, demoRun } from "./demo-data";
+import type { DatasetRun, FinalTableProfile, PlatformStatus } from "./types";
+import { demo, demoDataset, demoDatasets, demoEvidence, demoFinalTables, demoRun } from "./demo-data";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 export const isDemo = import.meta.env.VITE_DEMO_MODE === "true" || (!import.meta.env.DEV && !import.meta.env.VITE_API_URL);
@@ -16,6 +16,7 @@ export const api = {
   runs: () => isDemo ? mock(demo.runs) : request<Record<string, unknown>[]>("/api/pipelines/adventureworks/runs"),
   run: (runId: string) => isDemo ? mock(demoRun(runId)) : request<Record<string, unknown>>(`/api/runs/${encodeURIComponent(runId)}`),
   runDatasets: (runId: string) => isDemo ? mock(demoDatasets) : request<DatasetRun[]>(`/api/runs/${encodeURIComponent(runId)}/datasets`),
+  finalTables: () => isDemo ? mock(demoFinalTables) : request<FinalTableProfile[]>("/api/final-tables"),
   dataset: (name: string) => isDemo ? mock(demoDataset(name)) : request<Record<string, unknown>>(`/api/datasets/${encodeURIComponent(name)}`),
   freshness: () => isDemo ? mock(demo.freshness) : request<Record<string, unknown>[]>("/api/freshness"),
   quality: () => isDemo ? mock(demo.quality) : request<Record<string, unknown>>("/api/data-quality"),

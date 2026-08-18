@@ -35,3 +35,15 @@ export interface DatasetRun {
   stages: Record<string, Status>;
   error_message?: string;
 }
+
+export interface FinalTableProfile {
+  table: string;
+  rows: number;
+  columns: number;
+  missing_values_pct: number;
+  duplicate_rows: number;
+  complete_months: { actual: number; expected: number } | null;
+  null_columns: number;
+  unexpected_values: number;
+  volume_anomaly: Status;
+}

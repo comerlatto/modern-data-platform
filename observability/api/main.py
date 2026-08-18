@@ -8,6 +8,7 @@ from typing import Any, Iterator
 import psycopg
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from psycopg import sql
 from psycopg.rows import dict_row
 
 try:
@@ -60,6 +61,62 @@ def fetch_all(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
 def fetch_one(query: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | None:
     rows = fetch_all(query, params)
     return rows[0] if rows else None
+
+
+def final_table_profile(conn: psycopg.Connection[Any], table_name: str, columns: list[dict[str, Any]]) -> dict[str, Any]:
+    """Build a compact, read-only profile for one trusted analytics relation."""
+    relation = sql.Identifier("analytics", table_name)
+    profile_query = sql.SQL(
+        """
+        select count(*)::bigint as rows,
+               (count(*) - count(distinct to_jsonb(t)))::bigint as duplicate_rows,
+               coalesce(sum((select count(*) from jsonb_each(to_jsonb(t)) item
+                             where item.value = 'null'::jsonb)), 0)::bigint as null_cells,
+               coalesce((select count(distinct item.key)
+                         from {relation} n
+                         cross join lateral jsonb_each(to_jsonb(n)) item
+                         where item.value = 'null'::jsonb), 0)::int as null_columns
+        from {relation} t
+        """
+    ).format(relation=relation)
+    stats = dict(conn.execute(profile_query).fetchone())
+    row_count = int(stats["rows"] or 0)
+    column_count = len(columns)
+    cell_count = row_count * column_count
+
+    month_column = next((column["column_name"] for column in columns if "month" in column["column_name"].lower() and column["data_type"] in {"date", "timestamp without time zone", "timestamp with time zone"}), None)
+    complete_months = None
+    if month_column:
+        month_stats = dict(conn.execute(
+            sql.SQL(
+                """select count(distinct date_trunc('month', {column}))::int as actual,
+                           case when min({column}) is null then 0 else
+                             (extract(year from age(date_trunc('month', max({column})), date_trunc('month', min({column})))) * 12
+                              + extract(month from age(date_trunc('month', max({column})), date_trunc('month', min({column})))))::int + 1 end as expected
+                    from {relation}"""
+            ).format(column=sql.Identifier(month_column), relation=relation)
+        ).fetchone())
+        complete_months = {"actual": month_stats["actual"], "expected": month_stats["expected"]}
+
+    unexpected = conn.execute(
+        """
+        select coalesce(sum(t.failures), 0)::bigint as count
+        from observability.dbt_test_results t
+        where lower(t.test_name) like '%accepted_value%'
+          and t.depends_on::text ilike %s
+          and t.invocation_id = (select invocation_id from observability.dbt_runs order by collected_at desc limit 1)
+        """,
+        (f"%{table_name}%",),
+    ).fetchone()
+    unexpected_values = int(unexpected["count"] or 0) if unexpected else 0
+    missing_pct = round((int(stats["null_cells"]) / cell_count * 100), 2) if cell_count else 0.0
+    anomaly = "warning" if complete_months and complete_months["actual"] < complete_months["expected"] else "success"
+    return {
+        "table": f"analytics.{table_name}", "rows": row_count, "columns": column_count,
+        "missing_values_pct": missing_pct, "duplicate_rows": int(stats["duplicate_rows"] or 0),
+        "complete_months": complete_months, "null_columns": int(stats["null_columns"] or 0),
+        "unexpected_values": unexpected_values, "volume_anomaly": anomaly,
+    }
 
 
 def dataset_dbt_stages(run_id: str, dataset: str) -> dict[str, str]:
@@ -500,6 +557,24 @@ def freshness() -> list[dict[str, Any]]:
         ) order by dataset_name
         """
     )
+
+
+@app.get("/api/final-tables")
+def final_tables() -> list[dict[str, Any]]:
+    """Profile the dbt outputs exposed to analytical consumers."""
+    with database() as conn:
+        columns = list(conn.execute(
+            """
+            select table_name, column_name, data_type, ordinal_position
+            from information_schema.columns
+            where table_schema = 'analytics'
+            order by table_name, ordinal_position
+            """
+        ).fetchall())
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for column in columns:
+            grouped.setdefault(column["table_name"], []).append(dict(column))
+        return [final_table_profile(conn, name, table_columns) for name, table_columns in grouped.items()]
 
 
 @app.get("/api/data-quality")

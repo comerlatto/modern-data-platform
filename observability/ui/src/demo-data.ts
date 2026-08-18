@@ -1,4 +1,4 @@
-import type { DatasetRun, PlatformStatus } from "./types";
+import type { DatasetRun, FinalTableProfile, PlatformStatus } from "./types";
 
 const latestRun = "scheduled__2026-08-15T09:00:00-03:00";
 const previousRun = "scheduled__2026-08-14T09:00:00-03:00";
@@ -75,3 +75,8 @@ export function demoRun(runId: string) {
 }
 export function demoDataset(name: string) { const row = demoDatasets.find((item) => item.dataset === name) || demoDatasets[0]; const tests = demoDatasetTests.filter((test) => test.dataset === row.dataset); return { dataset: row.dataset, ingestion: row, freshness: { freshness_type: row.dataset.startsWith("sales") ? "business" : "technical", age_seconds: 2820 }, stages: row.stages, tests }; }
 export const demoEvidence = [{ sales_order_id: 75123, status: "Archived" }, { sales_order_id: 75187, status: "Archived" }, { sales_order_id: 75201, status: "Archived" }];
+export const demoFinalTables: FinalTableProfile[] = [
+  { table: "analytics.fct_sales_monthly", rows: 37, columns: 11, missing_values_pct: 0, duplicate_rows: 0, complete_months: { actual: 36, expected: 37 }, null_columns: 0, unexpected_values: 0, volume_anomaly: "warning" },
+  { table: "analytics.dim_customer", rows: 19_820, columns: 14, missing_values_pct: 0, duplicate_rows: 0, complete_months: null, null_columns: 0, unexpected_values: 0, volume_anomaly: "success" },
+  { table: "analytics.dim_product", rows: 504, columns: 18, missing_values_pct: 0, duplicate_rows: 0, complete_months: null, null_columns: 0, unexpected_values: 0, volume_anomaly: "success" },
+];
